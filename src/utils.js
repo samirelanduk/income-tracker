@@ -1,4 +1,4 @@
-import { incomeTax, salaryIncomeTax, dividendIncomeTax, dividendAllowance } from "./hmrc";
+import { incomeTax, studentLoan, salaryIncomeTax, dividendIncomeTax, dividendAllowance } from "./hmrc";
 
 export const dateToTaxYear = (date, monthStart=4) => {
   const year = parseInt(date.split("-")[0]);
@@ -71,4 +71,9 @@ export const calculateDividendIncomeTaxOwed = (totalIncome, dividendIncome, taxY
     (incomeTaxData.additionalBand - incomeTaxData.higherBand) * dividendIncomeTaxData.higher +
     (taxableIncome - incomeTaxData.additionalBand) * dividendIncomeTaxData.additional
   );
+}
+
+export const calculateStudentLoanOwed = (totalIncome, taxYear) => {
+  const studentLoanData = studentLoan[taxYear];
+  return Math.max(totalIncome - studentLoanData.threshold, 0) * studentLoanData.rate;
 }
