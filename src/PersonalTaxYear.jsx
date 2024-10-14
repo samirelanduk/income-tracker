@@ -3,6 +3,7 @@ import PropTypes from "prop-types";
 import { data } from "./data";
 import { dateToTaxYear, formatCurrency } from "./utils";
 import TaxReturn from "./TaxReturn";
+import IncomeTax from "./IncomeTax";
 
 const PersonalTaxYear = props => {
 
@@ -63,6 +64,7 @@ const PersonalTaxYear = props => {
             </div>
           ))}
         </div>
+        <IncomeTax taxYear={taxYear} />
         <TaxReturn taxYear={taxYear} />
       </div>
     </div>
