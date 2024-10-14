@@ -3,3 +3,7 @@ export const dateToTaxYear = date => {
   const month = parseInt(date.split("-")[1]);
   return month < 4 ? year - 1 : year;
 }
+
+export const formatCurrency = amount => {
+  return amount.toLocaleString("en-GB", { style: "currency", currency: "GBP" });
+}
