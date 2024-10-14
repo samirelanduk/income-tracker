@@ -11,3 +11,7 @@ export const formatCurrency = amount => {
 export const formatDate = date => {
   return new Date(date).toLocaleDateString("en-GB");
 }
+
+export const calculateSalaryIncomeTaxOwed = (totalIncome, salaryIncome, taxYear) => {
+
+} 

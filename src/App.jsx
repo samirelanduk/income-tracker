@@ -6,7 +6,7 @@ import CompanyFinances from "./CompanyFinances";
 
 const App = () => {
 
-  const [mode, setMode] = useState("Deep Mountain");
+  const [mode, setMode] = useState("Personal");
 
   const allTransactions = data.flatMap(c => c.transactions);
 

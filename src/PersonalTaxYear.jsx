@@ -1,7 +1,8 @@
 import React from "react";
 import PropTypes from "prop-types";
-import { data, taxReturns, hmrcPayments } from "./data";
-import { dateToTaxYear, formatCurrency, formatDate } from "./utils";
+import { data } from "./data";
+import { dateToTaxYear, formatCurrency } from "./utils";
+import TaxReturn from "./TaxReturn";
 
 const PersonalTaxYear = props => {
 
@@ -39,10 +40,6 @@ const PersonalTaxYear = props => {
 
   const totalIncome = totalSalaryIncome + totalDividendIncome;
 
-  const taxReturn = taxReturns.find(t => t.taxYear === taxYear);
-
-  const hmrcPaymentsForYear = hmrcPayments.filter(p => p.taxYear === taxYear);
-  const hasPayments = hmrcPaymentsForYear.length > 0;
 
   return (
     <div>
@@ -66,24 +63,7 @@ const PersonalTaxYear = props => {
             </div>
           ))}
         </div>
-        {taxReturn && (
-          <div>
-            <div className="text-lg">HMRC Owed: {formatCurrency(taxReturn.incomeTax + taxReturn.studentLoan)}</div>
-            <div className="text-base ml-8">Income tax: {formatCurrency(taxReturn.incomeTax)}</div>
-            <div className="text-base ml-8">Student loan: {formatCurrency(taxReturn.studentLoan)}</div>
-            {hasPayments && (
-              <>
-                <div className="text-lg">HMRC Payments: {formatCurrency(hmrcPaymentsForYear.reduce((acc, p) => acc + p.amount, 0))}</div>
-                {hmrcPaymentsForYear.map(p => (
-                  <div key={p.date} className="text-base ml-8">
-                    {formatDate(p.date)}: {formatCurrency(p.amount)}
-                  </div>
-                ))}
-              </>
-            )}
-            <div className="text-lg">Oustanding: {formatCurrency(taxReturn.incomeTax + taxReturn.studentLoan - hmrcPaymentsForYear.reduce((acc, p) => acc + p.amount, 0))}</div>
-          </div>
-        )}
+        <TaxReturn taxYear={taxYear} />
       </div>
     </div>
   );
