@@ -55,7 +55,6 @@ export const calculateDividendIncomeTaxOwed = (totalIncome, dividendIncome, taxY
   const higherBand = Math.max(incomeTaxData.higherBand - salaryIncome, 0);
   const additionalBand = Math.max(incomeTaxData.additionalBand - salaryIncome, 0);
   const taxableIncome = Math.max(dividends - personalAllowance, 0);
-  console.log(dividendIncome)
   if (taxableIncome === 0) return 0;
   if (taxableIncome <= higherBand) {
     return taxableIncome * dividendIncomeTaxData.basic;

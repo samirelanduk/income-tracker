@@ -46,7 +46,6 @@ const TaxReturn = props => {
   const studentLoanOwed = studentLoanIncome * studentLoanData.rate;
 
   const totalOwed = taxReturn ? taxReturn.incomeTax + taxReturn.studentLoan : studentLoanOwed;
-  console.log(taxYear, salaryIncomeTaxOwed, dividendIncomeTaxOwed)
 
   const hmrcPaymentsForYear = hmrcPayments.filter(p => p.taxYear === taxYear);
   const hasPayments = hmrcPaymentsForYear.length > 0;

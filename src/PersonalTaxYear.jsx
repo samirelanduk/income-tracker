@@ -5,6 +5,7 @@ import { dateToTaxYear, formatCurrency } from "./utils";
 import TaxReturn from "./TaxReturn";
 import IncomeTax from "./IncomeTax";
 import StudentLoan from "./StudentLoan";
+import PaymentsTable from "./PaymentsTable";
 
 const PersonalTaxYear = props => {
 
@@ -19,6 +20,9 @@ const PersonalTaxYear = props => {
     c => dateToTaxYear(c.personalDate || c.date) === taxYear
   )
   const dividendComponents = components.filter(c => c.type === "dividend").filter(
+    c => dateToTaxYear(c.personalDate || c.date) === taxYear
+  );
+  const useOfHomeComponents = components.filter(c => c.type === "use of home").filter(
     c => dateToTaxYear(c.personalDate || c.date) === taxYear
   );
 
@@ -40,7 +44,12 @@ const PersonalTaxYear = props => {
     return {...acc, [c.company]: (acc[c.company] || 0) + c.amount};
   }, {});
 
-  const totalIncome = totalSalaryIncome + totalDividendIncome;
+  const totalUseOfHome = useOfHomeComponents.reduce((acc, c) => acc + c.amount, 0);
+  const useOfHomeByCompany = useOfHomeComponents.reduce((acc, c) => {
+    return {...acc, [c.company]: (acc[c.company] || 0) + c.amount};
+  }, {});
+
+  const totalIncome = totalSalaryIncome + totalDividendIncome + totalUseOfHome;
 
 
   return (
@@ -64,11 +73,20 @@ const PersonalTaxYear = props => {
               {c.name}: {formatCurrency(dividendIncomeByCompany[c.name] || 0)}
             </div>
           ))}
+          <div className="ml-8 text-lg">Total use of home: {formatCurrency(totalUseOfHome)}</div>
+          {data.map(c => (
+            <div key={c.name} className="ml-16">
+              <span className="size-3 rounded-full inline-block mr-1" style={{backgroundColor: c.color}} />
+              {c.name}: {formatCurrency(useOfHomeByCompany[c.name] || 0)}
+            </div>
+          ))}
         </div>
         <IncomeTax taxYear={taxYear} />
         <StudentLoan taxYear={taxYear} />
         <TaxReturn taxYear={taxYear} />
       </div>
+
+      <PaymentsTable taxYear={taxYear} />
     </div>
   );
 };
