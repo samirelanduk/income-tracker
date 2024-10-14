@@ -2,7 +2,7 @@ import React from "react";
 import PropTypes from "prop-types";
 import { data, taxReturns, hmrcPayments } from "./data";
 import { studentLoan } from "./hmrc";
-import { dateToTaxYear, formatCurrency, formatDate } from "./utils";
+import { calculateDividendIncomeTaxOwed, calculateSalaryIncomeTaxOwed, dateToTaxYear, formatCurrency, formatDate } from "./utils";
 
 const TaxReturn = props => {
 
@@ -37,13 +37,16 @@ const TaxReturn = props => {
 
   const taxReturn = taxReturns.find(t => t.taxYear === taxYear);
 
-  const incomeTaxOwed = 0;
+  const salaryIncomeTaxOwed = calculateSalaryIncomeTaxOwed(totalIncome, totalSalaryIncome, taxYear);
+  const dividendIncomeTaxOwed = calculateDividendIncomeTaxOwed(totalIncome, totalDividendIncome, taxYear);
+  const incomeTaxOwed = salaryIncomeTaxOwed + dividendIncomeTaxOwed;
 
   const studentLoanData = studentLoan[taxYear];
   const studentLoanIncome = Math.max(totalIncome - studentLoanData.threshold, 0);
   const studentLoanOwed = studentLoanIncome * studentLoanData.rate;
 
   const totalOwed = taxReturn ? taxReturn.incomeTax + taxReturn.studentLoan : studentLoanOwed;
+  console.log(taxYear, salaryIncomeTaxOwed, dividendIncomeTaxOwed)
 
   const hmrcPaymentsForYear = hmrcPayments.filter(p => p.taxYear === taxYear);
   const hasPayments = hmrcPaymentsForYear.length > 0;
@@ -53,7 +56,13 @@ const TaxReturn = props => {
     <div>
       <div className="text-lg">HMRC Owed: {formatCurrency(totalOwed)}</div>
       <div className="text-base ml-8">Income tax: {formatCurrency(taxReturn ? taxReturn.incomeTax : incomeTaxOwed)}</div>
+      {taxReturn && (
+        <div className="ml-8 text-xs">Predicted: {formatCurrency(incomeTaxOwed)}</div>
+      )}
       <div className="text-base ml-8">Student loan: {formatCurrency(taxReturn ? taxReturn.studentLoan : studentLoanOwed)}</div>
+      {taxReturn && (
+        <div className="ml-8 text-xs">Predicted: {formatCurrency(studentLoanOwed)}</div>
+      )}
       {hasPayments && (
         <>
           <div className="text-lg">HMRC Payments: {formatCurrency(hmrcPaymentsForYear.reduce((acc, p) => acc + p.amount, 0))}</div>
