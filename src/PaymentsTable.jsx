@@ -8,15 +8,12 @@ const PaymentsTable = props => {
   const { taxYear } = props;
 
   const allTransactions = data.flatMap(c => c.transactions.map(t => ({...t, company: c.name})));
-  //console.log(allTransactions.map(t => t.date));
   const components = allTransactions.filter(t => t.components).map(
     t => t.components.map(c => ({...c, company: t.company, date: t.date}))
   ).flat();
-  //if (taxYear === 2021) console.log(components.map(c => c.date));
   const salaryComponents = components.filter(c => c.type === "salary").filter(
     c => dateToTaxYear(c.personalDate || c.date) === taxYear
   )
-  if (taxYear === 2021) console.log(salaryComponents.map(c => c.date));
   salaryComponents.sort((a, b) => a.date.split("-").map(d => d.padStart(2, "0")).join("-").localeCompare(b.date.split("-").map(d => d.padStart(2, "0")).join("-")));
   const dividendComponents = components.filter(c => c.type === "dividend").filter(
     c => dateToTaxYear(c.personalDate || c.date) === taxYear

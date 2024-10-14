@@ -11,13 +11,15 @@ const ModeSwitcher = props => {
     ...data.map(c => ({name: c.name, color: c.color}))
   ]
 
+  const selectedMode = modes.find(m => m.name === mode);
+
   return (
-    <div className="flex gap-4">
+    <div className={`flex justify-end text-lg gap-6 ${props.className || ""}`}>
       {modes.map(m => (
         <button
           key={m.name}
           onClick={() => setMode(m.name)}
-          className={`border-b-4 ${mode === m.name ? "font-bold" : ""}`}
+          className={`border-b-4 ${mode === m.name ? "" : ""}`}
           style={{
             borderColor: m.color,
             color: mode === m.name ? m.color : null
@@ -26,12 +28,14 @@ const ModeSwitcher = props => {
           {m.name}
         </button>
       ))}
+      <div className="fixed left-0 w-4 top-0 bottom-0" style={{backgroundColor: selectedMode.color}} />
     </div>
   );
 };
 
 ModeSwitcher.propTypes = {
-  
+  mode: PropTypes.string.isRequired,
+  setMode: PropTypes.func.isRequired,
 };
 
 export default ModeSwitcher;

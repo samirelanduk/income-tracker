@@ -20,9 +20,8 @@ const App = () => {
   taxYears.sort((a, b) => b - a);
 
   return (
-    <div className="p-4">
-      <ModeSwitcher mode={mode} setMode={setMode} />
-      <h1 className="text-5xl mt-8 mb-12 font-medium">{mode}</h1>
+    <div className="bg-gray-100  pl-14 pr-10 pt-6 pb-12 text-gray-700">
+      <ModeSwitcher mode={mode} setMode={setMode} className="mb-12" />
       {mode === "Personal" && <PersonalFinances />}
       {mode !== "Personal" && <CompanyFinances name={mode} />}
     </div>
