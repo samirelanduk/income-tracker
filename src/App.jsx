@@ -2,10 +2,11 @@ import { useState } from "react";
 import { data } from "./data";
 import ModeSwitcher from "./ModeSwitcher";
 import PersonalFinances from "./PersonalFinances";
+import CompanyFinances from "./CompanyFinances";
 
 const App = () => {
 
-  const [mode, setMode] = useState("Personal");
+  const [mode, setMode] = useState("Deep Mountain");
 
   const allTransactions = data.flatMap(c => c.transactions);
 
@@ -21,8 +22,9 @@ const App = () => {
   return (
     <div className="p-4">
       <ModeSwitcher mode={mode} setMode={setMode} />
-      <h1 className="text-5xl my-6 font-medium">{mode}</h1>
+      <h1 className="text-5xl mt-8 mb-12 font-medium">{mode}</h1>
       {mode === "Personal" && <PersonalFinances />}
+      {mode !== "Personal" && <CompanyFinances name={mode} />}
     </div>
   );
 };

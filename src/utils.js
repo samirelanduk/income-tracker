@@ -1,7 +1,7 @@
-export const dateToTaxYear = date => {
+export const dateToTaxYear = (date, monthStart=4) => {
   const year = parseInt(date.split("-")[0]);
   const month = parseInt(date.split("-")[1]);
-  return month < 4 ? year - 1 : year;
+  return month < monthStart ? year - 1 : year;
 }
 
 export const formatCurrency = amount => {
