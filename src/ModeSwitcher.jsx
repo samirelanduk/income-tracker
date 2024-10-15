@@ -8,7 +8,7 @@ const ModeSwitcher = props => {
 
   const modes = [
     {name: "Personal", color: "#4c9a89"},
-    ...data.map(c => ({name: c.name, color: c.color}))
+    ...data.filter(d => d.controlled).map(c => ({name: c.name, color: c.color}))
   ]
 
   const selectedMode = modes.find(m => m.name === mode);

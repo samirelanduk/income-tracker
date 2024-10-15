@@ -14,8 +14,13 @@ const PaymentsTable = props => {
   const salaryComponents = components.filter(c => c.type === "salary").filter(
     c => dateToTaxYear(c.personalDate || c.date) === taxYear
   )
-  salaryComponents.sort((a, b) => a.date.split("-").map(d => d.padStart(2, "0")).join("-").localeCompare(b.date.split("-").map(d => d.padStart(2, "0")).join("-")));
   const dividendComponents = components.filter(c => c.type === "dividend").filter(
+    c => dateToTaxYear(c.personalDate || c.date) === taxYear
+  );
+  const interestComponents = components.filter(c => c.type === "interest").filter(
+    c => dateToTaxYear(c.personalDate || c.date) === taxYear
+  );
+  const useOfHomeComponents = components.filter(c => c.type === "use of home").filter(
     c => dateToTaxYear(c.personalDate || c.date) === taxYear
   );
 
@@ -48,6 +53,31 @@ const PaymentsTable = props => {
       net: c.amount,
     });
   }
+  for (const c of interestComponents) {
+    rows.push({
+      date: c.date,
+      company: c.company,
+      type: "Interest",
+      grossIncome: c.amount,
+      incomeTax: 0,
+      employeeNI: 0,
+      studentLoan: 0,
+      net: c.amount,
+    });
+  }
+  for (const c of useOfHomeComponents) {
+    rows.push({
+      date: c.date,
+      company: c.company,
+      type: "Use of Home",
+      grossIncome: c.amount,
+      incomeTax: 0,
+      employeeNI: 0,
+      studentLoan: 0,
+      net: c.amount,
+    });
+  }
+
   rows.sort((a, b) => a.date.split("-").map(d => d.padStart(2, "0")).join("-").localeCompare(b.date.split("-").map(d => d.padStart(2, "0")).join("-")));
 
   const cellClass = "py-1 px-2 text-left";

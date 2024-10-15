@@ -18,6 +18,9 @@ const TaxReturn = props => {
   const dividendComponents = components.filter(c => c.type === "dividend").filter(
     c => dateToTaxYear(c.personalDate || c.date) === taxYear
   );
+  const interestComponents = components.filter(c => c.type === "interest").filter(
+    c => dateToTaxYear(c.personalDate || c.date) === taxYear
+  );
 
   let payeIT = 0;
   let payeSL = 0;
@@ -41,7 +44,8 @@ const TaxReturn = props => {
   }
 
   const totalDividendIncome = dividendComponents.reduce((acc, c) => acc + c.amount, 0);
-  const totalIncome = totalSalaryIncome + totalDividendIncome;
+  const totalInterestIncome = interestComponents.reduce((acc, c) => acc + c.amount, 0);
+  const totalIncome = totalSalaryIncome + totalDividendIncome + totalInterestIncome;
   
   const salaryIncomeTaxOwed = calculateSalaryIncomeTaxOwed(totalIncome, totalSalaryIncome, taxYear);
   const dividendIncomeTaxOwed = calculateDividendIncomeTaxOwed(totalIncome, totalDividendIncome, taxYear);

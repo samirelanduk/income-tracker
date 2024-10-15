@@ -51,14 +51,12 @@ const IncomeTax = props => {
       <div className="text-2xl font-medium -mt-0.5 mb-2">
         {formatCurrency(incomeTaxOwed)}
       </div>
-
-
       <div className="flex gap-x-6">
         <div>
           <div className="font-medium">
             <span className="text-xs font-bold text-gray-600">PAYE: </span>{formatCurrency(paye)}
           </div>
-          {data.map(c => (
+          {data.filter(d => payeByCompany[d.name]).map(c => (
             <div key={c.name} className={indentClass}>
               <span className="size-3 rounded-full inline-block mr-1" style={{backgroundColor: c.color}} />
               {c.name}: {formatCurrency(payeByCompany[c.name])}

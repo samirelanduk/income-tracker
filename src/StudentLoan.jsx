@@ -19,6 +19,9 @@ const StudentLoan = props => {
   const dividendComponents = components.filter(c => c.type === "dividend").filter(
     c => dateToTaxYear(c.personalDate || c.date) === taxYear
   );
+  const interestComponents = components.filter(c => c.type === "interest").filter(
+    c => dateToTaxYear(c.personalDate || c.date) === taxYear
+  );
 
   let paye = 0;
   let totalSalaryIncome = 0;
@@ -36,7 +39,8 @@ const StudentLoan = props => {
   }
 
   const totalDividendIncome = dividendComponents.reduce((acc, c) => acc + c.amount, 0);
-  const totalIncome = totalSalaryIncome + totalDividendIncome;
+  const totalInterestIncome = interestComponents.reduce((acc, c) => acc + c.amount, 0);
+  const totalIncome = totalSalaryIncome + totalDividendIncome + totalInterestIncome;
   const studentLoanOwed = calculateStudentLoanOwed(totalIncome, taxYear);
   const hmrcBill = studentLoanOwed - paye;
 
@@ -48,27 +52,25 @@ const StudentLoan = props => {
       <div className="text-2xl font-medium -mt-0.5 mb-2">
         {formatCurrency(studentLoanOwed)}
       </div>
-
+      <div className="flex flex-col gap-1">
         <div>
           <div className="font-medium">
             <span className="text-xs font-bold text-gray-600">PAYE: </span>{formatCurrency(paye)}
           </div>
-          {data.map(c => (
+          {data.filter(d => payeByCompany[d.name]).map(c => (
             <div key={c.name} className={indentClass}>
               <span className="size-3 rounded-full inline-block mr-1" style={{backgroundColor: c.color}} />
               {c.name}: {formatCurrency(payeByCompany[c.name])}
             </div>
           ))}
         </div>
-        <div>
-          <div className="font-medium">
-            <span className="text-xs font-bold text-gray-600">Total owed: </span>{formatCurrency(studentLoanOwed)}
-          </div>
+        <div className="font-medium">
+          <span className="text-xs font-bold text-gray-600">Total owed: </span>{formatCurrency(studentLoanOwed)}
         </div>
         <div className="font-medium">
           <span className="text-xs font-bold text-gray-600">HMRC Bill: </span>{formatCurrency(hmrcBill)}
         </div>
-
+      </div>
     </div>
   );
 };

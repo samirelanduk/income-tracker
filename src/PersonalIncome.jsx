@@ -20,6 +20,9 @@ const PersonalIncome = props => {
   const useOfHomeComponents = components.filter(c => c.type === "use of home").filter(
     c => dateToTaxYear(c.personalDate || c.date) === taxYear
   );
+  const interestComponents = components.filter(c => c.type === "interest").filter(
+    c => dateToTaxYear(c.personalDate || c.date) === taxYear
+  );
 
   let totalSalaryIncome = 0;
   const salaryIncomeByCompany = data.reduce((acc, c) => {
@@ -39,6 +42,11 @@ const PersonalIncome = props => {
     return {...acc, [c.company]: (acc[c.company] || 0) + c.amount};
   }, {});
 
+  const totalInterestIncome = interestComponents.reduce((acc, c) => acc + c.amount, 0);
+  const interestIncomeByCompany = interestComponents.reduce((acc, c) => {
+    return {...acc, [c.company]: (acc[c.company] || 0) + c.amount};
+  }, {});
+
   const totalUseOfHome = useOfHomeComponents.reduce((acc, c) => acc + c.amount, 0);
   const useOfHomeByCompany = useOfHomeComponents.reduce((acc, c) => {
     return {...acc, [c.company]: (acc[c.company] || 0) + c.amount};
@@ -49,8 +57,9 @@ const PersonalIncome = props => {
       salary: salaryIncomeByCompany[c.name] || 0,
       dividend: dividendIncomeByCompany[c.name] || 0,
       useOfHome: useOfHomeByCompany[c.name] || 0,
+      interest: interestIncomeByCompany[c.name] || 0,
     }
-    components.total = components.salary + components.dividend + components.useOfHome;
+    components.total = components.salary + components.dividend + components.useOfHome + components.interest;
     return {...acc, [c.name]: components};
   }, {});
 
@@ -92,6 +101,20 @@ const PersonalIncome = props => {
             </div>
           </div>
         )}
+        {totalInterestIncome !== 0 && (
+          <div>
+            <div className={headingClass}>Interest</div>
+            <div className="text-xl font-medium">{formatCurrency(totalInterestIncome)}</div>
+            <div className={indentClass}>
+              {data.filter(d => interestIncomeByCompany[d.name]).map(c => (
+                <div key={c.name}>
+                  <span className={`size-3 ${circleClass}`} style={{backgroundColor: c.color}} />
+                  {c.name}: {formatCurrency(interestIncomeByCompany[c.name] || 0)}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
         {totalUseOfHome !== 0 && (
           <div>
             <div className={headingClass}>Use of Home</div>
@@ -115,6 +138,7 @@ const PersonalIncome = props => {
             <div className="text-xl font-medium">{formatCurrency(income.total)}</div>
             {income.salary !== 0 && <div className={indentClass}>Salary: {formatCurrency(income.salary)}</div>}
             {income.dividend !== 0 && <div className={indentClass}>Dividends: {formatCurrency(income.dividend)}</div>}
+            {income.interest !== 0 && <div className={indentClass}>Interest: {formatCurrency(income.interest)}</div>}
             {income.useOfHome !== 0 && <div className={indentClass}>Use of Home: {formatCurrency(income.useOfHome)}</div>}
           </div>
         ))}

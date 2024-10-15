@@ -49,27 +49,51 @@ export const calculateDividendIncomeTaxOwed = (totalIncome, dividendIncome, taxY
   const salaryIncome = totalIncome - dividendIncome;
   const incomeTaxData = incomeTax[taxYear];
   const dividendIncomeTaxData = dividendIncomeTax[taxYear];
-  const dividends = Math.max(dividendIncome - dividendAllowance[taxYear], 0);
+  const dividends = dividendIncome;
+  const allowance = dividendAllowance[taxYear];
   let personalAllowance = calculatePersonalAllowance(totalIncome, taxYear);
+  const salaryOverPersonalAllowance = Math.max(salaryIncome - personalAllowance, 0);
+  const higherBand = Math.max(incomeTaxData.higherBand - salaryOverPersonalAllowance, 0);
+  const additionalBand = Math.max(incomeTaxData.additionalBand - salaryOverPersonalAllowance, 0);
   personalAllowance = Math.max(personalAllowance - salaryIncome, 0);
-  const higherBand = Math.max(incomeTaxData.higherBand - salaryIncome, 0);
-  const additionalBand = Math.max(incomeTaxData.additionalBand - salaryIncome, 0);
   const taxableIncome = Math.max(dividends - personalAllowance, 0);
-  if (taxableIncome === 0) return 0;
+  let taxableAtBasic = 0;
+  let taxableAtHigher = 0;
+  let taxableAtAdditional = 0;
   if (taxableIncome <= higherBand) {
-    return taxableIncome * dividendIncomeTaxData.basic;
-  }
-  if (taxableIncome <= additionalBand) {
-    return (
-      (higherBand * dividendIncomeTaxData.basic) +
-      (taxableIncome - higherBand) * dividendIncomeTaxData.higher
-    );
+    taxableAtBasic = Math.max(taxableIncome - allowance, 0);
+    taxableAtHigher = 0;
+    taxableAtAdditional = 0;
+  } else if (taxableIncome <= additionalBand) {
+    taxableAtBasic = higherBand;
+    taxableAtHigher = taxableIncome - higherBand;
+    taxableAtAdditional = 0;
+    if (taxableAtBasic >= allowance) {
+      taxableAtBasic -= allowance;
+    } else {
+      taxableAtHigher -= allowance - taxableAtBasic;
+      taxableAtBasic = 0;
+    }
+  } else {
+    taxableAtBasic = higherBand;
+    taxableAtHigher = additionalBand - higherBand;
+    taxableAtAdditional = taxableIncome - additionalBand;
+    if (taxableAtBasic >= allowance) {
+      taxableAtBasic -= allowance;
+    } else if (taxableAtHigher >= allowance) {
+      taxableAtHigher -= allowance - taxableAtBasic;
+      taxableAtBasic = 0;
+    } else {
+      taxableAtAdditional -= allowance - taxableAtBasic - taxableAtHigher;
+      taxableAtHigher = 0;
+      taxableAtBasic = 0;
+    }
   }
   return (
-    (incomeTaxData.higherBand * dividendIncomeTaxData.basic) +
-    (incomeTaxData.additionalBand - incomeTaxData.higherBand) * dividendIncomeTaxData.higher +
-    (taxableIncome - incomeTaxData.additionalBand) * dividendIncomeTaxData.additional
-  );
+    taxableAtBasic * dividendIncomeTaxData.basic +
+    taxableAtHigher * dividendIncomeTaxData.higher +
+    taxableAtAdditional * dividendIncomeTaxData.additional
+  )
 }
 
 export const calculateStudentLoanOwed = (totalIncome, taxYear) => {
