@@ -5,17 +5,17 @@ import { dateToTaxYear, formatCurrency } from "./utils";
 
 const NationalInsurance = props => {
 
-  const { taxYear } = props;
+  const { taxYear, useFuture } = props;
 
   const allTransactions = data.flatMap(c => c.transactions.map(t => ({...t, company: c.name})));
   const components = allTransactions.filter(t => t.components).map(
-    t => t.components.map(c => ({...c, company: t.company, date: t.date}))
+    t => t.components.map(c => ({...c, company: t.company, date: t.date, future: t.future}))
   ).flat();
   const salaryComponents = components.filter(c => c.type === "salary").filter(
-    c => dateToTaxYear(c.personalDate || c.date) === taxYear
+    c => dateToTaxYear(c.personalDate || c.date) === taxYear && (useFuture || !c.future)
   )
   const dividendComponents = components.filter(c => c.type === "dividend").filter(
-    c => dateToTaxYear(c.personalDate || c.date) === taxYear
+    c => dateToTaxYear(c.personalDate || c.date) === taxYear && (useFuture || !c.future)
   );
 
   let paye = 0;

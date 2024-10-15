@@ -5,6 +5,7 @@ export const studentLoan = {
   2022: {threshold: 20195, rate: 0.09},
   2023: {threshold: 22015, rate: 0.09},
   2024: {threshold: 24990, rate: 0.09},
+  2025: {threshold: 26065, rate: 0.09},
 }
 
 export const incomeTax = {
@@ -14,6 +15,7 @@ export const incomeTax = {
   2022: {personalAllowance: 12570, higherBand: 37700, additionalBand: 150000, personalAllowanceThreshold: 100000},
   2023: {personalAllowance: 12570, higherBand: 37700, additionalBand: 125140, personalAllowanceThreshold: 100000},
   2024: {personalAllowance: 12570, higherBand: 40100, additionalBand: 125140, personalAllowanceThreshold: 100000},
+  2025: {personalAllowance: 12570, higherBand: 40100, additionalBand: 125140, personalAllowanceThreshold: 100000},
 }
 
 export const salaryIncomeTax = {
@@ -23,6 +25,7 @@ export const salaryIncomeTax = {
   2022: {basic: 0.2, higher: 0.4, additional: 0.45},
   2023: {basic: 0.2, higher: 0.4, additional: 0.45},
   2024: {basic: 0.2, higher: 0.4, additional: 0.45},
+  2025: {basic: 0.2, higher: 0.4, additional: 0.45},
 }
 
 export const dividendIncomeTax = {
@@ -32,6 +35,7 @@ export const dividendIncomeTax = {
   2022: {basic: 0.0875, higher: 0.3375, additional: 0.3935},
   2023: {basic: 0.0875, higher: 0.3375, additional: 0.3935},
   2024: {basic: 0.0875, higher: 0.3375, additional: 0.3935},
+  2025: {basic: 0.0875, higher: 0.3375, additional: 0.3935},
 }
 
 export const dividendAllowance = {
@@ -41,4 +45,5 @@ export const dividendAllowance = {
   2022: 2000,
   2023: 1000,
   2024: 500,
+  2025: 500,
 }

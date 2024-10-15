@@ -5,11 +5,11 @@ import { dateToTaxYear, formatCurrency, formatDate } from "./utils";
 
 const PaymentsTable = props => {
 
-  const { taxYear } = props;
+  const { taxYear, useFuture } = props;
 
   const allTransactions = data.flatMap(c => c.transactions.map(t => ({...t, company: c.name})));
   const components = allTransactions.filter(t => t.components).map(
-    t => t.components.map(c => ({...c, company: t.company, date: t.date}))
+    t => t.components.map(c => ({...c, company: t.company, date: t.date, future: t.future}))
   ).flat();
   const salaryComponents = components.filter(c => c.type === "salary").filter(
     c => dateToTaxYear(c.personalDate || c.date) === taxYear
@@ -26,6 +26,7 @@ const PaymentsTable = props => {
 
   const rows = [];
   for (const c of salaryComponents) {
+    if (!useFuture && c.future) continue;
     const incomeTax = c.incomeTax || 0;
     const employeeNI = c.employeeNI || 0;
     const studentLoan = c.studentLoan || 0;
@@ -39,9 +40,11 @@ const PaymentsTable = props => {
       employeeNI,
       studentLoan,
       net: c.amount,
+      future: c.future,
     });
   }
   for (const c of dividendComponents) {
+    if (!useFuture && c.future) continue;
     rows.push({
       date: c.date,
       company: c.company,
@@ -51,9 +54,11 @@ const PaymentsTable = props => {
       employeeNI: 0,
       studentLoan: 0,
       net: c.amount,
+      future: c.future,
     });
   }
   for (const c of interestComponents) {
+    if (!useFuture && c.future) continue;
     rows.push({
       date: c.date,
       company: c.company,
@@ -63,6 +68,7 @@ const PaymentsTable = props => {
       employeeNI: 0,
       studentLoan: 0,
       net: c.amount,
+      future: c.future,
     });
   }
   for (const c of useOfHomeComponents) {
@@ -100,7 +106,7 @@ const PaymentsTable = props => {
         <tbody>
           {rows.map((c, index) => {
             return (
-              <tr key={c.date} className={index % 2 === 0 ? "bg-sky-100" : "bg-sky-50"}>
+              <tr key={index} className={`${index % 2 === 0 ? "bg-sky-100" : "bg-sky-50"} ${c.future ? "italic text-gray-500 font-light" : ""}`}>
                 <td className={cellClass}>{formatDate(c.date)}</td>
                 <td className={cellClass}>{c.company}</td>
                 <td className={cellClass}>{c.type}</td>
@@ -119,7 +125,8 @@ const PaymentsTable = props => {
 };
 
 PaymentsTable.propTypes = {
-  
+  taxYear: PropTypes.number.isRequired,
+  useFuture: PropTypes.bool.isRequired,
 };
 
 export default PaymentsTable;

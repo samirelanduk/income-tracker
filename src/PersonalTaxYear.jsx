@@ -10,7 +10,7 @@ import NationalInsurance from "./NationalInsurance";
 
 const PersonalTaxYear = props => {
 
-  const { taxYear } = props;
+  const { taxYear, useFuture } = props;
 
   const [show, setShow] = useState(null);
 
@@ -35,7 +35,7 @@ const PersonalTaxYear = props => {
     status = "Future";
   }
 
-  const showContents = show === null ? status !== "Done" : show;
+  const showContents = show === null ? status !== "Done" && status !== "Future" : show;
 
   const statusClass = {
     Done: "text-green-700 border-green-600 bg-green-50",
@@ -58,14 +58,14 @@ const PersonalTaxYear = props => {
 
       {showContents && (
         <div className="pt-4">
-          <PersonalIncome taxYear={taxYear} className="border-b pb-4 px-6" />
+          <PersonalIncome taxYear={taxYear} useFuture={useFuture} className="border-b pb-4 px-6" />
           <div className="border-b flex whitespace-nowrap overflow-auto">
-            <IncomeTax taxYear={taxYear} className="border-r py-4 px-6" />
-            <StudentLoan taxYear={taxYear} className="py-4 px-6 border-r" />
-            <NationalInsurance taxYear={taxYear} className="py-4 px-6" />
+            <IncomeTax taxYear={taxYear} useFuture={useFuture} className="border-r py-4 px-6" />
+            <StudentLoan taxYear={taxYear} useFuture={useFuture} className="py-4 px-6 border-r" />
+            <NationalInsurance taxYear={taxYear} useFuture={useFuture} className="py-4 px-6" />
           </div>
-          <TaxReturn taxYear={taxYear} className="border-b-4 py-4 px-6" />
-          <PaymentsTable taxYear={taxYear} className="" />
+          <TaxReturn taxYear={taxYear} useFuture={useFuture} className="border-b-4 py-4 px-6" />
+          <PaymentsTable taxYear={taxYear} useFuture={useFuture} className="" />
         </div>
       )}
     </div>
