@@ -6,6 +6,7 @@ import IncomeTax from "./IncomeTax";
 import StudentLoan from "./StudentLoan";
 import PaymentsTable from "./PaymentsTable";
 import PersonalIncome from "./PersonalIncome";
+import NationalInsurance from "./NationalInsurance";
 
 const PersonalTaxYear = props => {
 
@@ -44,7 +45,6 @@ const PersonalTaxYear = props => {
     Future: "text-gray-700 border-gray-600 bg-gray-50",
   }
 
-
   return (
     <div className="bg-white shadow border rounded-lg overflow-hidden">
 
@@ -59,8 +59,11 @@ const PersonalTaxYear = props => {
       {showContents && (
         <div className="pt-4">
           <PersonalIncome taxYear={taxYear} className="border-b pb-4 px-6" />
-          <IncomeTax taxYear={taxYear} className="border-b py-4 px-6" />
-          <StudentLoan taxYear={taxYear} className="border-b py-4 px-6" />
+          <div className="border-b flex whitespace-nowrap overflow-auto">
+            <IncomeTax taxYear={taxYear} className="border-r py-4 px-6" />
+            <StudentLoan taxYear={taxYear} className="py-4 px-6 border-r" />
+            <NationalInsurance taxYear={taxYear} className="py-4 px-6" />
+          </div>
           <TaxReturn taxYear={taxYear} className="border-b-4 py-4 px-6" />
           <PaymentsTable taxYear={taxYear} className="" />
         </div>

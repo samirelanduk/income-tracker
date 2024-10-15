@@ -53,7 +53,7 @@ const IncomeTax = props => {
       </div>
 
 
-      <div className="flex gap-x-8">
+      <div className="flex gap-x-6">
         <div>
           <div className="font-medium">
             <span className="text-xs font-bold text-gray-600">PAYE: </span>{formatCurrency(paye)}

@@ -48,7 +48,7 @@ const StudentLoan = props => {
       <div className="text-2xl font-medium -mt-0.5 mb-2">
         {formatCurrency(studentLoanOwed)}
       </div>
-      <div className="flex gap-x-8">
+
         <div>
           <div className="font-medium">
             <span className="text-xs font-bold text-gray-600">PAYE: </span>{formatCurrency(paye)}
@@ -68,13 +68,13 @@ const StudentLoan = props => {
         <div className="font-medium">
           <span className="text-xs font-bold text-gray-600">HMRC Bill: </span>{formatCurrency(hmrcBill)}
         </div>
-      </div>
+
     </div>
   );
 };
 
 StudentLoan.propTypes = {
-  
+  taxYear: PropTypes.number.isRequired,
 };
 
 export default StudentLoan;
