@@ -87,7 +87,7 @@ const TaxReturn = props => {
         )}
         {outstanding !== 0 && yearIsOver && (
           <div className="bg-red-100 border-red-600 text-red-700 border px-2 rounded font-medium mt-1">
-            {outstanding > 0 ? "Owe" : "Owed"} {formatCurrency(outstanding)}
+            {outstanding > 0 ? "Owe" : "Owed"} {formatCurrency(Math.abs(outstanding))}
           </div>
         )}
       </div>
