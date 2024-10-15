@@ -2,7 +2,7 @@ import React from "react";
 import PropTypes from "prop-types";
 import { data, taxReturns, hmrcPayments } from "./data";
 import { studentLoan } from "./hmrc";
-import { calculateDividendIncomeTaxOwed, calculateSalaryIncomeTaxOwed, dateToTaxYear, formatCurrency, formatDate } from "./utils";
+import { calculateDividendIncomeTaxOwed, calculateSalaryIncomeTaxOwed, dateToTaxYear, calculateStudentLoanOwed, formatCurrency, formatDate } from "./utils";
 
 const TaxReturn = props => {
 
@@ -12,7 +12,6 @@ const TaxReturn = props => {
   const components = allTransactions.filter(t => t.components).map(
     t => t.components.map(c => ({...c, company: t.company, date: t.date}))
   ).flat();
-
   const salaryComponents = components.filter(c => c.type === "salary").filter(
     c => dateToTaxYear(c.personalDate || c.date) === taxYear
   )
@@ -20,59 +19,107 @@ const TaxReturn = props => {
     c => dateToTaxYear(c.personalDate || c.date) === taxYear
   );
 
+  let payeIT = 0;
+  let payeSL = 0;
   let totalSalaryIncome = 0;
+  const payeITByCompany = data.reduce((acc, c) => {
+    return {...acc, [c.name]: 0};
+  }, {});
+  const payeSLByCompany = data.reduce((acc, c) => {
+    return {...acc, [c.name]: 0};
+  }, {});
   for (const c of salaryComponents) {
     const incomeTax = c.incomeTax || 0;
     const employeeNI = c.employeeNI || 0;
     const studentLoan = c.studentLoan || 0;
     const grossIncome = c.amount + incomeTax + employeeNI + studentLoan;
     totalSalaryIncome += grossIncome;
+    payeIT += incomeTax;
+    payeSL += studentLoan;
+    payeITByCompany[c.company] += incomeTax;
+    payeSLByCompany[c.company] += studentLoan;
   }
 
   const totalDividendIncome = dividendComponents.reduce((acc, c) => acc + c.amount, 0);
-
   const totalIncome = totalSalaryIncome + totalDividendIncome;
-
-
-
-  const taxReturn = taxReturns.find(t => t.taxYear === taxYear);
-
+  
   const salaryIncomeTaxOwed = calculateSalaryIncomeTaxOwed(totalIncome, totalSalaryIncome, taxYear);
   const dividendIncomeTaxOwed = calculateDividendIncomeTaxOwed(totalIncome, totalDividendIncome, taxYear);
   const incomeTaxOwed = salaryIncomeTaxOwed + dividendIncomeTaxOwed;
+  const incomeTaxHmrc = incomeTaxOwed - payeIT;
 
-  const studentLoanData = studentLoan[taxYear];
-  const studentLoanIncome = Math.max(totalIncome - studentLoanData.threshold, 0);
-  const studentLoanOwed = studentLoanIncome * studentLoanData.rate;
 
-  const totalOwed = taxReturn ? taxReturn.incomeTax + taxReturn.studentLoan : studentLoanOwed;
+  const studentLoanOwed = calculateStudentLoanOwed(totalIncome, taxYear);
+  const studentLoanHmrc = studentLoanOwed - payeSL;
+
+  const hmrcBillPredicted = incomeTaxHmrc + studentLoanHmrc;
+
+  const taxReturn = taxReturns.find(t => t.taxYear === taxYear);
+  const taxReturnTotal = taxReturn ? taxReturn.incomeTax + taxReturn.studentLoan : hmrcBillPredicted;
 
   const hmrcPaymentsForYear = hmrcPayments.filter(p => p.taxYear === taxYear);
   const hasPayments = hmrcPaymentsForYear.length > 0;
   const totalPaymentsMade = hmrcPaymentsForYear.reduce((acc, p) => acc + p.amount, 0);
 
+  const outstanding = (taxReturn ? taxReturnTotal : hmrcBillPredicted) - totalPaymentsMade;
+
+  const yearIsOver = new Date() > new Date(taxYear + 1, 3, 5);
+
+  const headingClass = "text-xs leading-3 font-bold text-slate-500 mb-0.5";
+
   return (
-    <div>
-      <div className="text-lg">HMRC Owed: {formatCurrency(totalOwed)}</div>
-      <div className="text-base ml-8">Income tax: {formatCurrency(taxReturn ? taxReturn.incomeTax : incomeTaxOwed)}</div>
-      {taxReturn && (
-        <div className="ml-8 text-xs">Predicted: {formatCurrency(incomeTaxOwed)}</div>
-      )}
-      <div className="text-base ml-8">Student loan: {formatCurrency(taxReturn ? taxReturn.studentLoan : studentLoanOwed)}</div>
-      {taxReturn && (
-        <div className="ml-8 text-xs">Predicted: {formatCurrency(studentLoanOwed)}</div>
-      )}
-      {hasPayments && (
-        <>
-          <div className="text-lg">HMRC Payments: {formatCurrency(hmrcPaymentsForYear.reduce((acc, p) => acc + p.amount, 0))}</div>
-          {hmrcPaymentsForYear.map(p => (
-            <div key={p.date} className="text-base ml-8">
-              {formatDate(p.date)}: {formatCurrency(p.amount)}
+    <div className={`${props.className || ""}`}>
+      <div className="flex justify-between items-start mb-4">
+        <div>
+          <div className="font-medium text-slate-500">
+            Tax Return
+            {!taxReturn && " (predicted)"}
+          </div>
+          <div className="text-2xl font-medium">
+            <div>{formatCurrency(taxReturn ? taxReturnTotal : hmrcBillPredicted)}</div>
+            {taxReturn && (
+              <div className="text-xs">Predicted: {formatCurrency(hmrcBillPredicted)}</div>
+            )}
+          </div>
+        </div>
+        {outstanding === 0 && yearIsOver && (
+          <div className="bg-green-100 border-green-600 text-green-700 border-2 px-2 rounded font-semibold py-0 mt-1">Paid</div>
+        )}
+        {outstanding !== 0 && yearIsOver && (
+          <div className="bg-red-100 border-red-600 text-red-700 border px-2 rounded font-medium mt-1">
+            {outstanding > 0 ? "Owe" : "Owed"} {formatCurrency(outstanding)}
+          </div>
+        )}
+      </div>
+
+      <div className="flex gap-x-6">
+        <div>
+          <div className={headingClass}>Income Tax</div>
+          <div className="font-medium">{formatCurrency(taxReturn ? taxReturn.incomeTax : incomeTaxHmrc)}</div>
+          {taxReturn && (
+            <div className="text-xs font-medium">Predicted: {formatCurrency(incomeTaxHmrc)}</div>
+          )}
+        </div>
+        <div>
+          <div className={headingClass}>Student Loan</div>
+          <div className="font-medium">{formatCurrency(taxReturn ? taxReturn.studentLoan : studentLoanHmrc)}</div>
+          {taxReturn && (
+            <div className="text-xs font-medium">Predicted: {formatCurrency(studentLoanHmrc)}</div>
+          )}
+        </div>
+        {hasPayments && (
+          <div>
+            <div className={headingClass}>HMRC Payments</div>
+            <div className="flex flex-col gap-px">
+              {hmrcPaymentsForYear.map(p => (
+                <div key={p.date} className="text-xs font-medium">
+                  {formatDate(p.date)}: {formatCurrency(p.amount)}
+                </div>
+              ))}
             </div>
-          ))}
-        </>
-      )}
-      <div className="text-lg">Oustanding: {formatCurrency(totalOwed - totalPaymentsMade)}</div>
+          </div>
+        )}
+      </div>
     </div>
   );
 };

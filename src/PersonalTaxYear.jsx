@@ -58,14 +58,13 @@ const PersonalTaxYear = props => {
 
       {showContents && (
         <div className="py-4">
-            <PersonalIncome taxYear={taxYear} className="border-b pb-4 px-6" />
-            <IncomeTax taxYear={taxYear} className="border-b py-4 px-6" />
-            <StudentLoan taxYear={taxYear} className="border-b py-4 px-6" />
+          <PersonalIncome taxYear={taxYear} className="border-b pb-4 px-6" />
+          <IncomeTax taxYear={taxYear} className="border-b py-4 px-6" />
+          <StudentLoan taxYear={taxYear} className="border-b py-4 px-6" />
+          <TaxReturn taxYear={taxYear} className="border-b py-4 px-6" />
 
       
-          <div className="flex gap-x-6">
-            <TaxReturn taxYear={taxYear} />
-          </div>
+
 
           <PaymentsTable taxYear={taxYear} />
         </div>
