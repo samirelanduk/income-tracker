@@ -14,7 +14,7 @@ const ModeSwitcher = props => {
   const selectedMode = modes.find(m => m.name === mode);
 
   return (
-    <div className={`flex justify-end text-lg gap-6 ${props.className || ""}`}>
+    <div className={`flex justify-end text-lg gap-6 select-none ${props.className || ""}`}>
       {modes.map(m => (
         <button
           key={m.name}

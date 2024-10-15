@@ -7,6 +7,7 @@ import StudentLoan from "./StudentLoan";
 import PaymentsTable from "./PaymentsTable";
 import PersonalIncome from "./PersonalIncome";
 import NationalInsurance from "./NationalInsurance";
+import Status from "./Status";
 
 const PersonalTaxYear = props => {
 
@@ -37,23 +38,14 @@ const PersonalTaxYear = props => {
 
   const showContents = show === null ? status !== "Done" && status !== "Future" : show;
 
-  const statusClass = {
-    Done: "text-green-700 border-green-600 bg-green-50",
-    "Payments pending": "text-yellow-700 border-yellow-600 bg-yellow-50",
-    "Needs tax return": "text-orange-700 border-orange-600 bg-orange-50",
-    Ongoing: "text-blue-700 border-blue-600 bg-blue-50",
-    Future: "text-gray-700 border-gray-600 bg-gray-50",
-  }
-
   return (
-    <div className="bg-white shadow border rounded-lg overflow-hidden">
-
+    <div className="white-box">
       <div
-        className={`px-6 py-4 flex items-center justify-between cursor-pointer hover:bg-slate-300 ${showContents ? "pb-4 border-b-2" : ""}`}
+        className={showContents ? "box-top-open" : "box-top"}
         onClick={() => setShow(!showContents)}
       >
-        <h2 className="text-4xl font-semibold">{taxYear}/{taxYear+1}</h2>
-        <div className={`border-2 rounded font-semibold px-1.5 ${statusClass[status]}`}>{status}</div>
+        <h2>{taxYear}/{taxYear+1}</h2>
+        <Status status={status} />
       </div>
 
       {showContents && (

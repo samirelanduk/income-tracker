@@ -23,7 +23,7 @@ const App = () => {
         <ModeSwitcher mode={mode} setMode={setMode} />
       </nav>
       {mode === "Personal" && <PersonalFinances useFuture={useFuture} />}
-      {mode !== "Personal" && <CompanyFinances name={mode} />}
+      {mode !== "Personal" && <CompanyFinances name={mode} useFuture={useFuture} />}
     </div>
   );
 };
