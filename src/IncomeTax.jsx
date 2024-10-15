@@ -41,22 +41,41 @@ const IncomeTax = props => {
   const incomeTaxOwed = salaryIncomeTaxOwed + dividendIncomeTaxOwed;
   const hmrcBill = incomeTaxOwed - paye;
 
+  const indentClass = "text-sm pl-4";
+
 
 
   return (
-    <div>
-      <div>Income Tax</div>
-      <div>Paid through PAYE: {formatCurrency(paye)}</div>
-      {data.map(c => (
-        <div key={c.name} className="ml-8">
-          <span className="size-3 rounded-full inline-block mr-1" style={{backgroundColor: c.color}} />
-          {c.name}: {formatCurrency(payeByCompany[c.name])}
+    <div className={`${props.className || ""}`}>
+      <div className="font-medium text-slate-500">Income Tax</div>
+      <div className="text-2xl font-medium -mt-0.5 mb-2">
+        {formatCurrency(incomeTaxOwed)}
+      </div>
+
+
+      <div className="flex gap-x-8">
+        <div>
+          <div className="font-medium">
+            <span className="text-xs font-bold text-gray-600">PAYE: </span>{formatCurrency(paye)}
+          </div>
+          {data.map(c => (
+            <div key={c.name} className={indentClass}>
+              <span className="size-3 rounded-full inline-block mr-1" style={{backgroundColor: c.color}} />
+              {c.name}: {formatCurrency(payeByCompany[c.name])}
+            </div>
+          ))}
         </div>
-      ))}
-      <div>Total income tax owed: {formatCurrency(incomeTaxOwed)}</div>
-      <div>Salary income tax owed: {formatCurrency(salaryIncomeTaxOwed)}</div>
-      <div>Dividend income tax owed: {formatCurrency(dividendIncomeTaxOwed)}</div>
-      <div>HMRC Bill: {formatCurrency(hmrcBill)}</div>
+        <div>
+          <div className="font-medium">
+            <span className="text-xs font-bold text-gray-600">Total owed: </span>{formatCurrency(incomeTaxOwed)}
+          </div>
+          <div className={indentClass}>Salary: {formatCurrency(salaryIncomeTaxOwed)}</div>
+          <div className={indentClass}>Dividend: {formatCurrency(dividendIncomeTaxOwed)}</div>
+        </div>
+        <div className="font-medium">
+          <span className="text-xs font-bold text-gray-600">HMRC Bill: </span>{formatCurrency(hmrcBill)}
+        </div>
+      </div>
     </div>
   );
 };

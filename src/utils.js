@@ -18,9 +18,9 @@ export const calculatePersonalAllowance = (totalIncome, taxYear) => {
   const incomeTaxData = incomeTax[taxYear];
   return totalIncome <= incomeTaxData.personalAllowanceThreshold ? (
     incomeTaxData.personalAllowance
-  ) : incomeTaxData.personalAllowance - (
+  ) : Math.max(incomeTaxData.personalAllowance - (
     totalIncome - incomeTaxData.personalAllowanceThreshold
-  ) / 2;
+  ) / 2, 0);
 }
 
 export const calculateSalaryIncomeTaxOwed = (totalIncome, salaryIncome, taxYear) => {
