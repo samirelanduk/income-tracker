@@ -40,18 +40,35 @@ const StudentLoan = props => {
   const studentLoanOwed = calculateStudentLoanOwed(totalIncome, taxYear);
   const hmrcBill = studentLoanOwed - paye;
 
+  const indentClass = "text-sm pl-4";
+
   return (
-    <div>
-      <div>Student Loan</div>
-      <div>Paid through PAYE: {formatCurrency(paye)}</div>
-      {data.map(c => (
-        <div key={c.name} className="ml-8">
-          <span className="size-3 rounded-full inline-block mr-1" style={{backgroundColor: c.color}} />
-          {c.name}: {formatCurrency(payeByCompany[c.name])}
+    <div className={`${props.className || ""}`}>
+      <div className="font-medium text-slate-500">Student Loan</div>
+      <div className="text-2xl font-medium -mt-0.5 mb-2">
+        {formatCurrency(studentLoanOwed)}
+      </div>
+      <div className="flex gap-x-8">
+        <div>
+          <div className="font-medium">
+            <span className="text-xs font-bold text-gray-600">PAYE: </span>{formatCurrency(paye)}
+          </div>
+          {data.map(c => (
+            <div key={c.name} className={indentClass}>
+              <span className="size-3 rounded-full inline-block mr-1" style={{backgroundColor: c.color}} />
+              {c.name}: {formatCurrency(payeByCompany[c.name])}
+            </div>
+          ))}
         </div>
-      ))}
-      <div>Total student loan owed: {formatCurrency(studentLoanOwed)}</div>
-      <div>HMRC Bill: {formatCurrency(hmrcBill)}</div>
+        <div>
+          <div className="font-medium">
+            <span className="text-xs font-bold text-gray-600">Total owed: </span>{formatCurrency(studentLoanOwed)}
+          </div>
+        </div>
+        <div className="font-medium">
+          <span className="text-xs font-bold text-gray-600">HMRC Bill: </span>{formatCurrency(hmrcBill)}
+        </div>
+      </div>
     </div>
   );
 };
