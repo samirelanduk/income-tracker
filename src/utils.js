@@ -14,19 +14,18 @@ export const formatDate = date => {
   return new Date(date).toLocaleDateString("en-GB");
 }
 
-export const calculatePersonalAllowance = (totalIncome, taxYear) => {
-  const incomeTaxData = incomeTax[taxYear];
-  return totalIncome <= incomeTaxData.personalAllowanceThreshold ? (
-    incomeTaxData.personalAllowance
-  ) : Math.max(incomeTaxData.personalAllowance - (
-    totalIncome - incomeTaxData.personalAllowanceThreshold
+export const calculatePersonalAllowance = (totalIncome, defaultPersonalAllowance) => {
+  return totalIncome <= defaultPersonalAllowance ? (
+    defaultPersonalAllowance
+  ) : Math.max(defaultPersonalAllowance - (
+    totalIncome - defaultPersonalAllowance
   ) / 2, 0);
 }
 
 export const calculateSalaryIncomeTaxOwed = (totalIncome, salaryIncome, taxYear) => {
   const incomeTaxData = incomeTax[taxYear];
   const salaryIncomeTaxData = salaryIncomeTax[taxYear];
-  const personalAllowance = calculatePersonalAllowance(totalIncome, taxYear);
+  const personalAllowance = calculatePersonalAllowance(totalIncome, incomeTaxData.personalAllowance);
   const taxableIncome = Math.max(salaryIncome - personalAllowance, 0);
   if (taxableIncome === 0) return 0;
   if (taxableIncome <= incomeTaxData.higherBand) {
@@ -51,7 +50,7 @@ export const calculateDividendIncomeTaxOwed = (totalIncome, dividendIncome, taxY
   const dividendIncomeTaxData = dividendIncomeTax[taxYear];
   const dividends = dividendIncome;
   const allowance = dividendAllowance[taxYear];
-  let personalAllowance = calculatePersonalAllowance(totalIncome, taxYear);
+  let personalAllowance = calculatePersonalAllowance(totalIncome, incomeTaxData.personalAllowance);
   const salaryOverPersonalAllowance = Math.max(salaryIncome - personalAllowance, 0);
   const higherBand = Math.max(incomeTaxData.higherBand - salaryOverPersonalAllowance, 0);
   const additionalBand = Math.max(incomeTaxData.additionalBand - salaryOverPersonalAllowance, 0);
@@ -108,13 +107,21 @@ export const annotateSalaryComponents = components => {
     acc[company] = 0;
     return acc;
   }, {});
+  const cumulativeIncomeTaxByCompany = companies.reduce((acc, company) => {
+    acc[company] = 0;
+    return acc;
+  }, {});
   const cumulativeEmployeeNiByCompany = companies.reduce((acc, company) => {
     acc[company] = 0;
     return acc;
   }, {});
   for (const c of components) {
     if (c.future) {
-      c.incomeTax = c.incomeTax || 0;
+      if (c.incomeTax === undefined) {
+        c.incomeTax = predictIncomeTax(cumulativeSalaryByCompany[c.company] + c.amount, c.date, cumulativeIncomeTaxByCompany[c.company]);
+      } else {
+        c.incomeTax = c.incomeTax || 0;
+      }
       if (c.employeeNI === undefined) {
         if (c.cumulativeNi) {
           c.employeeNI = predictDirectorsEmployeeNi(cumulativeSalaryByCompany[c.company] + c.amount, c.date, cumulativeEmployeeNiByCompany[c.company]);
@@ -140,9 +147,79 @@ export const annotateSalaryComponents = components => {
       c.grossIncome = c.amount + c.incomeTax + c.employeeNI + c.studentLoan;
     }
     cumulativeSalaryByCompany[c.company] += c.grossIncome;
+    cumulativeIncomeTaxByCompany[c.company] += c.incomeTax;
     cumulativeEmployeeNiByCompany[c.company] += c.employeeNI;
   }
 };
+
+const predictIncomeTax = (salaryToDate, date, incomeTaxToDate) => {
+  const taxYear = dateToTaxYear(date);
+  const incomeTaxData = incomeTax[taxYear];
+  const salaryIncomeTaxData = salaryIncomeTax[taxYear];
+
+
+
+
+  // What is the month number (April = 1, March = 12)
+  const monthIndex = new Date(date).getMonth();
+  const year = new Date(date).getFullYear();
+  const monthNumber = monthIndex < 3 ? monthIndex + 10 : monthIndex - 2;
+
+  // What is the projected total salary for the year?
+  const projectedTotalSalary = salaryToDate / monthNumber * 12;
+
+  // What personal allowance would this imply?
+  const annualPersonalAllowance = calculatePersonalAllowance(salaryIncomeTaxData.personalAllowance + 9, taxYear);
+
+  // What are the thresholds for this point in the year?
+  const personalAllowance = annualPersonalAllowance / 12 * monthNumber;
+  const higherBand = incomeTaxData.higherBand / 12 * monthNumber;
+  const additionalBand = incomeTaxData.additionalBand / 12 * monthNumber;
+
+  // How much income is taxable?
+  const taxableIncome = Math.max(salaryToDate - personalAllowance, 0);
+
+
+  if (taxableIncome <= higherBand) {
+    return taxableIncome * salaryIncomeTaxData.basic - incomeTaxToDate;
+  }
+  if (taxableIncome <= additionalBand) {
+    return (
+      (higherBand * salaryIncomeTaxData.basic) +
+      (taxableIncome - higherBand) * salaryIncomeTaxData.higher
+    ) - incomeTaxToDate;
+  }
+  return (
+    (higherBand * salaryIncomeTaxData.basic) +
+    (additionalBand - higherBand) * salaryIncomeTaxData.higher +
+    (taxableIncome - additionalBand) * salaryIncomeTaxData.additional
+  ) - incomeTaxToDate;
+  
+  
+
+
+
+
+  /* const incomeTaxData = incomeTax[taxYear];
+  const salaryIncomeTaxData = salaryIncomeTax[taxYear];
+  const personalAllowance = calculatePersonalAllowance(totalIncome, taxYear);
+  const taxableIncome = Math.max(salaryIncome - personalAllowance, 0);
+  if (taxableIncome === 0) return 0;
+  if (taxableIncome <= incomeTaxData.higherBand) {
+    return taxableIncome * salaryIncomeTaxData.basic;
+  }
+  if (taxableIncome <= incomeTaxData.additionalBand) {
+    return (
+      (incomeTaxData.higherBand * salaryIncomeTaxData.basic) +
+      (taxableIncome - incomeTaxData.higherBand) * salaryIncomeTaxData.higher
+    );
+  }
+  return (
+    (incomeTaxData.higherBand * salaryIncomeTaxData.basic) +
+    (incomeTaxData.additionalBand - incomeTaxData.higherBand) * salaryIncomeTaxData.higher +
+    (taxableIncome - incomeTaxData.additionalBand) * salaryIncomeTaxData.additional
+  ); */
+}
 
 const predictEmployeeNI = (amount, date) => {
   const taxYear = dateToTaxYear(date);

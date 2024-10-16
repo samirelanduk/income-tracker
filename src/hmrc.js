@@ -14,8 +14,8 @@ export const incomeTax = {
   2021: {personalAllowance: 12570, higherBand: 37700, additionalBand: 150000, personalAllowanceThreshold: 100000},
   2022: {personalAllowance: 12570, higherBand: 37700, additionalBand: 150000, personalAllowanceThreshold: 100000},
   2023: {personalAllowance: 12570, higherBand: 37700, additionalBand: 125140, personalAllowanceThreshold: 100000},
-  2024: {personalAllowance: 12570, higherBand: 40100, additionalBand: 125140, personalAllowanceThreshold: 100000},
-  2025: {personalAllowance: 12570, higherBand: 40100, additionalBand: 125140, personalAllowanceThreshold: 100000},
+  2024: {personalAllowance: 12570, higherBand: 37700, additionalBand: 125140, personalAllowanceThreshold: 100000},
+  2025: {personalAllowance: 12570, higherBand: 37700, additionalBand: 125140, personalAllowanceThreshold: 100000},
 }
 
 export const salaryIncomeTax = {
