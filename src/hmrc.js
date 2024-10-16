@@ -47,3 +47,100 @@ export const dividendAllowance = {
   2024: 500,
   2025: 500,
 }
+
+export const nationalInsurance = {
+  2025: {
+    "2025-04-06": {
+      lel: 533*12,
+      pt: 1048*12,
+      st: 758*12,
+      uel: 4189*12,
+      employeeRate1: 0.08,
+      employeeRate2: 0.02,
+    }
+  },
+  2024: {
+    "2024-04-06": {
+      lel: 533*12,
+      pt: 1048*12,
+      st: 758*12,
+      uel: 4189*12,
+      employeeRate1: 0.08,
+      employeeRate2: 0.02,
+    }
+  },
+  2023: {
+    "2024-01-06": {
+      lel: 533*12,
+      pt: 1048*12,
+      st: 758*12,
+      uel: 4189*12,
+      employeeRate1: 0.1,
+      employeeRate2: 0.02,
+    },
+    "2023-04-06": {
+      lel: 533*12,
+      pt: 1048*12,
+      st: 758*12,
+      uel: 4189*12,
+      employeeRate1: 0.12,
+      employeeRate2: 0.02,
+    }
+  },
+  2022: {
+    "2022-11-06": {
+      lel: 533*12,
+      pt: 1048*12,
+      st: 758*12,
+      uel: 4189*12,
+      employeeRate1: 0.12,
+      employeeRate2: 0.02,
+    },
+    "2022-07-06": {
+      lel: 533*12,
+      pt: 1048*12,
+      st: 758*12,
+      uel: 4189*12,
+      employeeRate1: 0.1325,
+      employeeRate2: 0.0325,
+    },
+    "2022-04-06": {
+      lel: 533*12,
+      pt: 823*12,
+      st: 758*12,
+      uel: 4189*12,
+      employeeRate1: 0.1325,
+      employeeRate2: 0.0325,
+    }
+  },
+  2021: {
+    "2021-04-06": {
+      lel: 520*12,
+      pt: 797*12,
+      st: 737*12,
+      uel: 4189*12,
+      employeeRate1: 0.12,
+      employeeRate2: 0.02,
+    }
+  },
+  2020: {
+    "2020-04-06": {
+      lel: 520*12,
+      pt: 792*12,
+      st: 732*12,
+      uel: 4167*12,
+      employeeRate1: 0.12,
+      employeeRate2: 0.02,
+    }
+  },
+  2019: {
+    "2019-04-06": {
+      lel: 512*12,
+      pt: 719*12,
+      st: 719*12,
+      uel: 4167*12,
+      employeeRate1: 0.08,
+      employeeRate2: 0.02,
+    }
+  }
+}

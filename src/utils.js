@@ -1,4 +1,4 @@
-import { incomeTax, studentLoan, salaryIncomeTax, dividendIncomeTax, dividendAllowance } from "./hmrc";
+import { incomeTax, studentLoan, salaryIncomeTax, dividendIncomeTax, dividendAllowance, nationalInsurance } from "./hmrc";
 
 export const dateToTaxYear = (date, monthStart=4) => {
   const year = parseInt(date.split("-")[0]);
@@ -103,10 +103,27 @@ export const calculateStudentLoanOwed = (totalIncome, taxYear) => {
 
 
 export const annotateSalaryComponents = components => {
+  const companies = [...new Set(components.map(c => c.company))];
+  const cumulativeSalaryByCompany = companies.reduce((acc, company) => {
+    acc[company] = 0;
+    return acc;
+  }, {});
+  const cumulativeEmployeeNiByCompany = companies.reduce((acc, company) => {
+    acc[company] = 0;
+    return acc;
+  }, {});
   for (const c of components) {
     if (c.future) {
       c.incomeTax = c.incomeTax || 0;
-      c.employeeNI = c.employeeNI || 0;
+      if (c.employeeNI === undefined) {
+        if (c.cumulativeNi) {
+          c.employeeNI = predictDirectorsEmployeeNi(cumulativeSalaryByCompany[c.company] + c.amount, c.date, cumulativeEmployeeNiByCompany[c.company]);
+        } else {
+          c.employeeNI = predictEmployeeNI(c.amount, c.date);
+        }
+      } else {
+        c.employeeNI = c.employeeNI || 0;
+      }
       if (c.studentLoan === undefined) {
         c.studentLoan = predictStudentLoan(c.amount, c.date);
       } else {
@@ -122,8 +139,42 @@ export const annotateSalaryComponents = components => {
       c.net = c.amount;
       c.grossIncome = c.amount + c.incomeTax + c.employeeNI + c.studentLoan;
     }
+    cumulativeSalaryByCompany[c.company] += c.grossIncome;
+    cumulativeEmployeeNiByCompany[c.company] += c.employeeNI;
   }
 };
+
+const predictEmployeeNI = (amount, date) => {
+  const taxYear = dateToTaxYear(date);
+  const niData = nationalInsurance[taxYear];
+  const dates = Object.keys(niData);
+  const mostRecentDateToDate = dates.filter(d => new Date(d) <= new Date(date)).sort().reverse()[0];
+  const mostRecentData = niData[mostRecentDateToDate];
+  const pt = mostRecentData.pt / 12;
+  const uel = mostRecentData.uel / 12;
+  if (amount <= pt) return 0;
+  if (amount <= uel) return (amount - pt) * mostRecentData.employeeRate1;
+  return (uel - pt) * mostRecentData.employeeRate1 + (amount - uel) * mostRecentData.employeeRate2;
+}
+
+const predictDirectorsEmployeeNi = (salaryToDate, date, employeeNIToDate) => {
+  const taxYear = dateToTaxYear(date);
+  const niData = nationalInsurance[taxYear];
+  const dates = Object.keys(niData);
+  const mostRecentDateToDate = dates.filter(d => new Date(d) <= new Date(date)).sort().reverse()[0];
+  const mostRecentData = niData[mostRecentDateToDate];
+  const pt = mostRecentData.pt;
+  const uel = mostRecentData.uel;
+  let owedForYear;
+  if (salaryToDate < pt) {
+    owedForYear = 0;
+  } else if (salaryToDate < uel) {
+    owedForYear = (salaryToDate - pt) * mostRecentData.employeeRate1;
+  } else {
+    owedForYear = (uel - pt) * mostRecentData.employeeRate1 + (salaryToDate - uel) * mostRecentData.employeeRate2;
+  }
+  return owedForYear - employeeNIToDate;
+}
 
 const predictStudentLoan = (amount, date) => {
   const taxYear = dateToTaxYear(date);

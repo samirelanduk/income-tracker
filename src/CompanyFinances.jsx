@@ -23,7 +23,6 @@ const CompanyFinances = props => {
       t.amount = t.components.reduce((acc, c) => acc + (c.net || c.amount), 0);
     }
   }
-  console.log(transactions);
   
   const totalPaidIn = transactions.filter(t => t.amount < 0).reduce((acc, t) => acc + t.amount, 0) * -1;
   const totalPaidOut = transactions.filter(t => t.amount > 0).reduce((acc, t) => acc + t.amount, 0);
