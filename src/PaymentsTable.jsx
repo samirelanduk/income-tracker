@@ -93,7 +93,7 @@ const PaymentsTable = props => {
     <div className={`overflow-x-auto w-full whitespace-nowrap ${props.className || ""}`}>
       <table className="text-sm min-w-full">
         <thead>
-          <tr className="bg-sky-200">
+          <tr className="bg-slate-200">
             <th className={cellClass}>Date</th>
             <th className={cellClass}>Company</th>
             <th className={cellClass}>Type</th>
@@ -107,7 +107,7 @@ const PaymentsTable = props => {
         <tbody>
           {rows.map((c, index) => {
             return (
-              <tr key={index} className={`${index % 2 === 0 ? "bg-sky-100" : "bg-sky-50"} ${c.future ? "italic text-gray-500 font-light" : ""}`}>
+              <tr key={index} className={`${index % 2 === 0 ? "bg-slate-100" : "bg-slate-200"} ${c.future ? "italic text-gray-500 font-light" : ""}`}>
                 <td className={cellClass}>{formatDate(c.date)}</td>
                 <td className={cellClass}>{c.company}</td>
                 <td className={cellClass}>{c.type}</td>
