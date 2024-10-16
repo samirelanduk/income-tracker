@@ -1,7 +1,7 @@
 import React from "react";
 import PropTypes from "prop-types";
 import { data } from "./data";
-import { dateToTaxYear, formatCurrency, formatDate } from "./utils";
+import { dateToTaxYear, formatCurrency, formatDate, annotateSalaryComponents } from "./utils";
 
 const PaymentsTable = props => {
 
@@ -14,6 +14,7 @@ const PaymentsTable = props => {
   const salaryComponents = components.filter(c => c.type === "salary").filter(
     c => dateToTaxYear(c.personalDate || c.date) === taxYear
   )
+  annotateSalaryComponents(salaryComponents);
   const dividendComponents = components.filter(c => c.type === "dividend").filter(
     c => dateToTaxYear(c.personalDate || c.date) === taxYear
   );
@@ -30,7 +31,7 @@ const PaymentsTable = props => {
     const incomeTax = c.incomeTax || 0;
     const employeeNI = c.employeeNI || 0;
     const studentLoan = c.studentLoan || 0;
-    const grossIncome = c.amount + incomeTax + employeeNI + studentLoan;
+    const grossIncome = c.grossIncome;
     rows.push({
       date: c.date,
       company: c.company,
@@ -39,7 +40,7 @@ const PaymentsTable = props => {
       incomeTax,
       employeeNI,
       studentLoan,
-      net: c.amount,
+      net: c.net,
       future: c.future,
     });
   }

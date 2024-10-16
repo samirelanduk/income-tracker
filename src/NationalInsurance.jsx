@@ -1,7 +1,7 @@
 import React from "react";
 import PropTypes from "prop-types";
 import { data } from "./data";
-import { dateToTaxYear, formatCurrency } from "./utils";
+import { dateToTaxYear, formatCurrency, annotateSalaryComponents } from "./utils";
 
 const NationalInsurance = props => {
 
@@ -14,9 +14,7 @@ const NationalInsurance = props => {
   const salaryComponents = components.filter(c => c.type === "salary").filter(
     c => dateToTaxYear(c.personalDate || c.date) === taxYear && (useFuture || !c.future)
   )
-  const dividendComponents = components.filter(c => c.type === "dividend").filter(
-    c => dateToTaxYear(c.personalDate || c.date) === taxYear && (useFuture || !c.future)
-  );
+  annotateSalaryComponents(salaryComponents);
 
   let paye = 0;
   let totalSalaryIncome = 0;
@@ -24,13 +22,9 @@ const NationalInsurance = props => {
     return {...acc, [c.name]: 0};
   }, {});
   for (const c of salaryComponents) {
-    const incomeTax = c.incomeTax || 0;
-    const employeeNI = c.employeeNI || 0;
-    const studentLoan = c.studentLoan || 0;
-    const grossIncome = c.amount + incomeTax + employeeNI + studentLoan;
-    totalSalaryIncome += grossIncome;
-    paye += employeeNI;
-    payeByCompany[c.company] += employeeNI;
+    totalSalaryIncome += c.grossIncome;
+    paye += c.employeeNI;
+    payeByCompany[c.company] += c.employeeNI;
   }
 
   return (

@@ -1,6 +1,6 @@
 import PropTypes from "prop-types";
 import { data } from "./data";
-import { dateToTaxYear, formatCurrency } from "./utils";
+import { dateToTaxYear, formatCurrency, annotateSalaryComponents } from "./utils";
 
 const PersonalIncome = props => {
 
@@ -28,13 +28,10 @@ const PersonalIncome = props => {
   const salaryIncomeByCompany = data.reduce((acc, c) => {
     return {...acc, [c.name]: 0};
   }, {});
+  annotateSalaryComponents(salaryComponents);
   for (const c of salaryComponents) {
-    const incomeTax = c.incomeTax || 0;
-    const employeeNI = c.employeeNI || 0;
-    const studentLoan = c.studentLoan || 0;
-    const grossIncome = c.amount + incomeTax + employeeNI + studentLoan;
-    totalSalaryIncome += grossIncome;
-    salaryIncomeByCompany[c.company] += grossIncome;
+    totalSalaryIncome += c.grossIncome;
+    salaryIncomeByCompany[c.company] += c.grossIncome;
   }
 
   const totalDividendIncome = dividendComponents.reduce((acc, c) => acc + c.amount, 0);

@@ -100,3 +100,35 @@ export const calculateStudentLoanOwed = (totalIncome, taxYear) => {
   const studentLoanData = studentLoan[taxYear];
   return Math.max(totalIncome - studentLoanData.threshold, 0) * studentLoanData.rate;
 }
+
+
+export const annotateSalaryComponents = components => {
+  for (const c of components) {
+    if (c.future) {
+      c.incomeTax = c.incomeTax || 0;
+      c.employeeNI = c.employeeNI || 0;
+      if (c.studentLoan === undefined) {
+        c.studentLoan = predictStudentLoan(c.amount, c.date);
+      } else {
+        c.studentLoan = c.studentLoan || 0;
+      }
+      c.employerNI = c.employerNI || 0;
+      c.grossIncome = c.amount;
+      c.net = c.amount - c.incomeTax - c.employeeNI - c.studentLoan;
+    } else {
+      c.incomeTax = c.incomeTax || 0;
+      c.employeeNI = c.employeeNI || 0;
+      c.studentLoan = c.studentLoan || 0;
+      c.net = c.amount;
+      c.grossIncome = c.amount + c.incomeTax + c.employeeNI + c.studentLoan;
+    }
+  }
+};
+
+const predictStudentLoan = (amount, date) => {
+  const taxYear = dateToTaxYear(date);
+  const studentLoanData = studentLoan[taxYear];
+  const threshold = studentLoanData.threshold / 12;
+  const rate = studentLoanData.rate;
+  return parseInt(Math.max(amount - threshold, 0) * rate);
+}

@@ -2,7 +2,7 @@ import React from "react";
 import PropTypes from "prop-types";
 import { data } from "./data";
 import { dateToTaxYear } from "./utils";
-import { calculateStudentLoanOwed } from "./utils";
+import { calculateStudentLoanOwed, annotateSalaryComponents } from "./utils";
 import { formatCurrency } from "./utils";
 
 const StudentLoan = props => {
@@ -16,6 +16,7 @@ const StudentLoan = props => {
   const salaryComponents = components.filter(c => c.type === "salary").filter(
     c => dateToTaxYear(c.personalDate || c.date) === taxYear && (useFuture || !c.future)
   )
+  annotateSalaryComponents(salaryComponents);
   const dividendComponents = components.filter(c => c.type === "dividend").filter(
     c => dateToTaxYear(c.personalDate || c.date) === taxYear && (useFuture || !c.future)
   );
@@ -29,13 +30,9 @@ const StudentLoan = props => {
     return {...acc, [c.name]: 0};
   }, {});
   for (const c of salaryComponents) {
-    const incomeTax = c.incomeTax || 0;
-    const employeeNI = c.employeeNI || 0;
-    const studentLoan = c.studentLoan || 0;
-    const grossIncome = c.amount + incomeTax + employeeNI + studentLoan;
-    totalSalaryIncome += grossIncome;
-    paye += studentLoan;
-    payeByCompany[c.company] += studentLoan;
+    totalSalaryIncome += c.grossIncome;
+    paye += c.studentLoan;
+    payeByCompany[c.company] += c.studentLoan;
   }
 
   const totalDividendIncome = dividendComponents.reduce((acc, c) => acc + c.amount, 0);

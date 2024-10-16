@@ -2,7 +2,7 @@ import React from "react";
 import PropTypes from "prop-types";
 import { data, taxReturns, hmrcPayments } from "./data";
 import { studentLoan } from "./hmrc";
-import { calculateDividendIncomeTaxOwed, calculateSalaryIncomeTaxOwed, dateToTaxYear, calculateStudentLoanOwed, formatCurrency, formatDate } from "./utils";
+import { calculateDividendIncomeTaxOwed, calculateSalaryIncomeTaxOwed, dateToTaxYear, calculateStudentLoanOwed, formatCurrency, formatDate, annotateSalaryComponents } from "./utils";
 
 const TaxReturn = props => {
 
@@ -15,6 +15,7 @@ const TaxReturn = props => {
   const salaryComponents = components.filter(c => c.type === "salary").filter(
     c => dateToTaxYear(c.personalDate || c.date) === taxYear && (useFuture || !c.future)
   )
+  annotateSalaryComponents(salaryComponents);
   const dividendComponents = components.filter(c => c.type === "dividend").filter(
     c => dateToTaxYear(c.personalDate || c.date) === taxYear && (useFuture || !c.future)
   );
@@ -32,15 +33,11 @@ const TaxReturn = props => {
     return {...acc, [c.name]: 0};
   }, {});
   for (const c of salaryComponents) {
-    const incomeTax = c.incomeTax || 0;
-    const employeeNI = c.employeeNI || 0;
-    const studentLoan = c.studentLoan || 0;
-    const grossIncome = c.amount + incomeTax + employeeNI + studentLoan;
-    totalSalaryIncome += grossIncome;
-    payeIT += incomeTax;
-    payeSL += studentLoan;
-    payeITByCompany[c.company] += incomeTax;
-    payeSLByCompany[c.company] += studentLoan;
+    totalSalaryIncome += c.grossIncome;
+    payeIT += c.incomeTax;
+    payeSL += c.studentLoan;
+    payeITByCompany[c.company] += c.incomeTax;
+    payeSLByCompany[c.company] += c.studentLoan;
   }
 
   const totalDividendIncome = dividendComponents.reduce((acc, c) => acc + c.amount, 0);
@@ -54,7 +51,7 @@ const TaxReturn = props => {
 
 
   const studentLoanOwed = calculateStudentLoanOwed(totalIncome, taxYear);
-  const studentLoanHmrc = studentLoanOwed - payeSL;
+  const studentLoanHmrc = parseInt(studentLoanOwed - payeSL);
 
   const hmrcBillPredicted = incomeTaxHmrc + studentLoanHmrc;
 

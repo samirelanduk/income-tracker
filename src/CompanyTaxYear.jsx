@@ -1,7 +1,7 @@
 import { useState } from "react";
 import PropTypes from "prop-types";
 import { data } from "./data";
-import { dateToTaxYear } from "./utils";
+import { dateToTaxYear, annotateSalaryComponents } from "./utils";
 import { formatCurrency } from "./utils";
 import Status from "./Status";
 
@@ -19,7 +19,8 @@ const CompanyTaxYear = props => {
 
   const salaryComponents = components.filter(c => c.type === "salary").filter(
     c => dateToTaxYear(c.companyDate || c.date, companyData.monthStart) === taxYear
-  )
+  );
+  annotateSalaryComponents(salaryComponents);
   const dividendComponents = components.filter(c => c.type === "dividend").filter(
     c => dateToTaxYear(c.companyDate || c.date, companyData.monthStart) === taxYear
   );
@@ -30,13 +31,9 @@ const CompanyTaxYear = props => {
   let salary = 0;
   const salaryIncomeByTaxYear = {};
   for (const c of salaryComponents) {
-    const incomeTax = c.incomeTax || 0;
-    const employeeNI = c.employeeNI || 0;
-    const studentLoan = c.studentLoan || 0;
-    const grossIncome = c.amount + incomeTax + employeeNI + studentLoan;
-    salary += grossIncome;
+    salary += c.grossIncome;
     const personalTaxYear = dateToTaxYear(c.date);
-    salaryIncomeByTaxYear[personalTaxYear] = (salaryIncomeByTaxYear[personalTaxYear] || 0) + grossIncome;
+    salaryIncomeByTaxYear[personalTaxYear] = (salaryIncomeByTaxYear[personalTaxYear] || 0) + c.grossIncome;
   }
 
 
