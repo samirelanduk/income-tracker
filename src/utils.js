@@ -1,6 +1,12 @@
 import { incomeTax, studentLoan, salaryIncomeTax, dividendIncomeTax, dividendAllowance, nationalInsurance } from "./hmrc";
 
 export const dateToTaxYear = (date, monthStart) => {
+  /**
+   * Returns the tax year for a given date. If no month start is provided, a
+   * cutoff of April 6th is used. If a month start is provided, a cutoff of
+   * the 1st of that month is used.
+   */
+
   const dateObj = new Date(date);
   const month = monthStart || 4;
   const day = monthStart ? 1 : 6;
@@ -13,12 +19,31 @@ export const dateToTaxYear = (date, monthStart) => {
   return dateObj.getFullYear() - 1;
 }
 
+
 export const formatCurrency = amount => {
-  return amount.toLocaleString("en-GB", { style: "currency", currency: "GBP" });
+  /**
+   * Formats a number as a currency string in GBP. Decimals are included if
+   * the amount is not an integer.
+   */
+
+  const isInteger = Number.isInteger(amount);
+  return amount.toLocaleString("en-GB", {
+    style: "currency",
+    currency: "GBP",
+    minimumFractionDigits: isInteger ? 0 : 2
+  });
 }
 
 export const formatDate = date => {
-  return new Date(date).toLocaleDateString("en-GB");
+  /**
+   * Formats a date as a string in the format "day month year".
+   */
+  
+  return new Date(date).toLocaleDateString("en-GB", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
 }
 
 export const calculatePersonalAllowance = (totalIncome, defaultPersonalAllowance) => {
