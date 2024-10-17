@@ -1,8 +1,8 @@
 import React from "react";
 import PropTypes from "prop-types";
-import { data, taxReturns, hmrcPayments } from "./data";
-import { studentLoan } from "./hmrc";
-import { calculateDividendIncomeTaxOwed, calculateSalaryIncomeTaxOwed, dateToTaxYear, calculateStudentLoanOwed, formatCurrency, formatDate, annotateSalaryComponents } from "./utils";
+import { data, taxReturns, hmrcPayments } from "../data";
+import { studentLoan } from "../hmrc";
+import { calculateDividendIncomeTaxOwed, calculateSalaryIncomeTaxOwed, dateToTaxYear, calculateStudentLoanOwed, formatCurrency, formatDate, annotateSalaryComponents } from "../utils";
 
 const TaxReturn = props => {
 

@@ -1,8 +1,8 @@
 import React from "react";
 import PropTypes from "prop-types";
-import { data } from "./data";
+import { data } from "../data";
 import PersonalTaxYear from "./PersonalTaxYear";
-import { dateToTaxYear } from "./utils";
+import { dateToTaxYear } from "../utils";
 
 const PersonalFinances = props => {
 

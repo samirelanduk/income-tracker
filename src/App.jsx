@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { data } from "./data";
-import ModeSwitcher from "./ModeSwitcher";
-import PersonalFinances from "./PersonalFinances";
-import CompanyFinances from "./CompanyFinances";
-import FutureToggle from "./FutureToggle";
+import ModeSwitcher from "./components/ModeSwitcher";
+import PersonalFinances from "./components/PersonalFinances";
+import CompanyFinances from "./components/CompanyFinances";
+import FutureToggle from "./components/FutureToggle";
 import { dateToTaxYear } from "./utils";
 
 const App = () => {

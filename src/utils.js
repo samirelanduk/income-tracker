@@ -1,9 +1,16 @@
 import { incomeTax, studentLoan, salaryIncomeTax, dividendIncomeTax, dividendAllowance, nationalInsurance } from "./hmrc";
 
-export const dateToTaxYear = (date, monthStart=4) => {
-  const year = parseInt(date.split("-")[0]);
-  const month = parseInt(date.split("-")[1]);
-  return month < monthStart ? year - 1 : year;
+export const dateToTaxYear = (date, monthStart) => {
+  const dateObj = new Date(date);
+  const month = monthStart || 4;
+  const day = monthStart ? 1 : 6;
+  if (dateObj.getMonth() + 1 > month) {
+    return dateObj.getFullYear();
+  }
+  if (dateObj.getMonth() + 1 === month && dateObj.getDate() >= day) {
+    return dateObj.getFullYear();
+  }
+  return dateObj.getFullYear() - 1;
 }
 
 export const formatCurrency = amount => {

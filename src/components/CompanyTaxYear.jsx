@@ -1,8 +1,8 @@
 import { useState } from "react";
 import PropTypes from "prop-types";
-import { data } from "./data";
-import { dateToTaxYear, annotateSalaryComponents } from "./utils";
-import { formatCurrency } from "./utils";
+import { data } from "../data";
+import { dateToTaxYear, annotateSalaryComponents } from "../utils";
+import { formatCurrency } from "../utils";
 import Status from "./Status";
 
 const CompanyTaxYear = props => {

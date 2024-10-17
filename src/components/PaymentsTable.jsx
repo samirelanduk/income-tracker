@@ -1,7 +1,7 @@
 import React from "react";
 import PropTypes from "prop-types";
-import { data } from "./data";
-import { dateToTaxYear, formatCurrency, formatDate, annotateSalaryComponents } from "./utils";
+import { data } from "../data";
+import { dateToTaxYear, formatCurrency, formatDate, annotateSalaryComponents } from "../utils";
 
 const PaymentsTable = props => {
 

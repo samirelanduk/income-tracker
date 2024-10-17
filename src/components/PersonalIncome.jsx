@@ -1,6 +1,6 @@
 import PropTypes from "prop-types";
-import { data } from "./data";
-import { dateToTaxYear, formatCurrency, annotateSalaryComponents } from "./utils";
+import { data } from "../data";
+import { dateToTaxYear, formatCurrency, annotateSalaryComponents } from "../utils";
 
 const PersonalIncome = props => {
 

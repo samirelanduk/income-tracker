@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import PropTypes from "prop-types";
-import { taxReturns, hmrcPayments } from "./data";
+import { taxReturns, hmrcPayments } from "../data";
 import TaxReturn from "./TaxReturn";
 import IncomeTax from "./IncomeTax";
 import StudentLoan from "./StudentLoan";
