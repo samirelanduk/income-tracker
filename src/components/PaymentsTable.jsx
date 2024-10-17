@@ -1,56 +1,39 @@
 import React from "react";
 import PropTypes from "prop-types";
 import { data } from "../data";
-import { dateToTaxYear, formatCurrency, formatDate, annotateSalaryComponents } from "../utils";
+import { formatCurrency, formatDate, getComponents } from "../utils";
 
 const PaymentsTable = props => {
 
   const { taxYear, useFuture } = props;
 
-  const allTransactions = data.flatMap(c => c.transactions.map(t => ({...t, company: c.name, cumulativeNi: c.cumulativeNi})));
-  const components = allTransactions.filter(t => t.components).map(
-    t => t.components.map(c => ({...c, company: t.company, cumulativeNi: t.cumulativeNi, date: t.date, future: t.future}))
-  ).flat();
-  const salaryComponents = components.filter(c => c.type === "salary").filter(
-    c => dateToTaxYear(c.personalDate || c.date) === taxYear
-  )
-  annotateSalaryComponents(salaryComponents);
-  const dividendComponents = components.filter(c => c.type === "dividend").filter(
-    c => dateToTaxYear(c.personalDate || c.date) === taxYear
-  );
-  const interestComponents = components.filter(c => c.type === "interest").filter(
-    c => dateToTaxYear(c.personalDate || c.date) === taxYear
-  );
-  const useOfHomeComponents = components.filter(c => c.type === "use of home").filter(
-    c => dateToTaxYear(c.personalDate || c.date) === taxYear
-  );
+  const salaryComponents = getComponents(data, "salary", null, taxYear, useFuture);
+  const dividendComponents = getComponents(data, "dividend", null, taxYear, useFuture);
+  const interestComponents = getComponents(data, "interest", null, taxYear, useFuture);
+  const useOfHomeComponents = getComponents(data, "use of home", null, taxYear, useFuture);
 
   const rows = [];
   for (const c of salaryComponents) {
-    if (!useFuture && c.future) continue;
-    const incomeTax = c.incomeTax || 0;
-    const employeeNI = c.employeeNI || 0;
-    const studentLoan = c.studentLoan || 0;
-    const grossIncome = c.grossIncome;
     rows.push({
       date: c.date,
       company: c.company,
+      color: c.color,
       type: "Salary",
-      grossIncome,
-      incomeTax,
-      employeeNI,
-      studentLoan,
+      gross: c.gross,
+      incomeTax: c.incomeTax,
+      employeeNI: c.employeeNI,
+      studentLoan: c.studentLoan,
       net: c.net,
       future: c.future,
     });
   }
   for (const c of dividendComponents) {
-    if (!useFuture && c.future) continue;
     rows.push({
       date: c.date,
       company: c.company,
+      color: c.color,
       type: "Dividend",
-      grossIncome: c.amount,
+      gross: c.amount,
       incomeTax: 0,
       employeeNI: 0,
       studentLoan: 0,
@@ -59,12 +42,12 @@ const PaymentsTable = props => {
     });
   }
   for (const c of interestComponents) {
-    if (!useFuture && c.future) continue;
     rows.push({
       date: c.date,
       company: c.company,
+      color: c.color,
       type: "Interest",
-      grossIncome: c.amount,
+      gross: c.amount,
       incomeTax: 0,
       employeeNI: 0,
       studentLoan: 0,
@@ -76,8 +59,9 @@ const PaymentsTable = props => {
     rows.push({
       date: c.date,
       company: c.company,
+      color: c.color,
       type: "Use of Home",
-      grossIncome: c.amount,
+      gross: c.amount,
       incomeTax: 0,
       employeeNI: 0,
       studentLoan: 0,
@@ -87,7 +71,7 @@ const PaymentsTable = props => {
 
   rows.sort((a, b) => a.date.split("-").map(d => d.padStart(2, "0")).join("-").localeCompare(b.date.split("-").map(d => d.padStart(2, "0")).join("-")));
 
-  const cellClass = "py-1 px-2 text-left";
+  const cellClass = "py-1 px-2 text-left table-cell-flex";
 
   return (
     <div className={`overflow-x-auto w-full whitespace-nowrap ${props.className || ""}`}>
@@ -109,9 +93,12 @@ const PaymentsTable = props => {
             return (
               <tr key={index} className={`${index % 2 === 0 ? "bg-slate-100" : "bg-slate-200"} ${c.future ? "italic text-gray-500 font-light" : ""}`}>
                 <td className={cellClass}>{formatDate(c.date)}</td>
-                <td className={cellClass}>{c.company}</td>
+                <td className={cellClass}>
+                  <span className="size-2 rounded-full inline-block mr-1 mb-px" style={{backgroundColor: c.color}} />
+                  {c.company}
+                </td>
                 <td className={cellClass}>{c.type}</td>
-                <td className={cellClass}>{formatCurrency(c.grossIncome)}</td>
+                <td className={cellClass}>{formatCurrency(c.gross)}</td>
                 <td className={cellClass}>{formatCurrency(c.incomeTax)}</td>
                 <td className={cellClass}>{formatCurrency(c.employeeNI)}</td>
                 <td className={cellClass}>{formatCurrency(c.studentLoan)}</td>

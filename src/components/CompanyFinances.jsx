@@ -1,39 +1,28 @@
 import React from "react";
 import PropTypes from "prop-types";
 import { data } from "../data";
-import { dateToTaxYear, formatCurrency, annotateSalaryComponents } from "../utils";
+import { dateToTaxYear, formatCurrency, getComponents } from "../utils";
 import CompanyTaxYear from "./CompanyTaxYear";
 
 const CompanyFinances = props => {
 
   const { name, useFuture } = props;
 
+  const components = getComponents(data, null, name, null, useFuture);
   const companyData = data.find(c => c.name === name);
   const transactions = companyData.transactions.filter(t => useFuture || !t.future);
+  transactions.forEach((t, i) => {
+    if (t.amount == null) {
+      const matchingComponents = components.filter(c => c.transactionIndex === i);
+      t.amount = matchingComponents.reduce((acc, c) => acc + (c.type === "salary" ? c.net : c.amount), 0);
+    }
+  });
+  const netPaid = transactions.reduce((acc, t) => acc + t.amount, 0);
+  const accountedOut = components.reduce((acc, c) => acc + (c.type === "salary" ? c.net : c.amount), 0);
+  const owed = accountedOut - netPaid;
 
   const taxYears = [...new Set(transactions.map(t => dateToTaxYear(t.date, companyData.monthStart)))];
   taxYears.sort((a, b) => b - a);
-
-  const components = transactions.filter(t => t.components).map(t => t.components).flat();
-  const dividendComponents = components.filter(c => c.type === "dividend");
-  const salaryComponents = components.filter(c => c.type === "salary");
-  annotateSalaryComponents(salaryComponents);
-  for (const t of transactions) {
-    if (t.amount === null) {
-      t.amount = t.components.reduce((acc, c) => acc + (c.net || c.amount), 0);
-    }
-  }
-  
-  const totalPaidIn = transactions.filter(t => t.amount < 0).reduce((acc, t) => acc + t.amount, 0) * -1;
-  const totalPaidOut = transactions.filter(t => t.amount > 0).reduce((acc, t) => acc + t.amount, 0);
-  
-  const dividendsPaid = dividendComponents.reduce((acc, c) => acc + c.amount, 0);
-  const salaryPaid = salaryComponents.reduce((acc, c) => acc + c.net, 0);
-  const useOfHomePaid = components.filter(c => c.type === "use of home").reduce((acc, c) => acc + c.amount, 0);
-  const sharesPaid = components.filter(c => c.type === "shares").reduce((acc, c) => acc + c.amount, 0);
-  const unaccountedOut = totalPaidOut - (dividendsPaid + salaryPaid + useOfHomePaid + sharesPaid);
-  
-  const owed = totalPaidIn - (unaccountedOut);
 
   return (
     <div>
@@ -53,6 +42,7 @@ const CompanyFinances = props => {
 
 CompanyFinances.propTypes = {
   name: PropTypes.string.isRequired,
+  useFuture: PropTypes.bool.isRequired,
 };
 
 export default CompanyFinances;

@@ -50,7 +50,7 @@ const PersonalTaxYear = props => {
 
       {showContents && (
         <div className="pt-4">
-          <PersonalIncome taxYear={taxYear} useFuture={useFuture} className="border-b pb-4 px-6" />
+          <PersonalIncome taxYear={taxYear} useFuture={useFuture} className="border-b pt-2 pb-6 px-6" />
           <div className="border-b flex whitespace-nowrap overflow-auto">
             <IncomeTax taxYear={taxYear} useFuture={useFuture} className="border-r py-4 px-6" />
             <StudentLoan taxYear={taxYear} useFuture={useFuture} className="py-4 px-6 border-r" />

@@ -1,40 +1,23 @@
 import React from "react";
 import PropTypes from "prop-types";
 import { data } from "../data";
-import { dateToTaxYear } from "../utils";
-import { calculateStudentLoanOwed, annotateSalaryComponents } from "../utils";
+import { calculateStudentLoanOwed, getComponents } from "../utils";
 import { formatCurrency } from "../utils";
 
 const StudentLoan = props => {
   
   const { taxYear, useFuture } = props;
 
-  const allTransactions = data.flatMap(c => c.transactions.map(t => ({...t, company: c.name})));
-  const components = allTransactions.filter(t => t.components).map(
-    t => t.components.map(c => ({...c, company: t.company, date: t.date, future: t.future}))
-  ).flat();
-  const salaryComponents = components.filter(c => c.type === "salary").filter(
-    c => dateToTaxYear(c.personalDate || c.date) === taxYear && (useFuture || !c.future)
-  )
-  annotateSalaryComponents(salaryComponents);
-  const dividendComponents = components.filter(c => c.type === "dividend").filter(
-    c => dateToTaxYear(c.personalDate || c.date) === taxYear && (useFuture || !c.future)
-  );
-  const interestComponents = components.filter(c => c.type === "interest").filter(
-    c => dateToTaxYear(c.personalDate || c.date) === taxYear && (useFuture || !c.future)
-  );
-
-  let paye = 0;
-  let totalSalaryIncome = 0;
+  const salaryComponents = getComponents(data, "salary", null, taxYear, useFuture);
+  const totalSalaryIncome = salaryComponents.reduce((acc, c) => acc + c.gross, 0);
+  const paye = salaryComponents.reduce((acc, c) => acc + c.studentLoan, 0);
   const payeByCompany = data.reduce((acc, c) => {
-    return {...acc, [c.name]: 0};
+    const paye = salaryComponents.filter(s => s.company === c.name).reduce((acc, s) => acc + s.studentLoan, 0);
+    return {...acc, [c.name]: paye};
   }, {});
-  for (const c of salaryComponents) {
-    totalSalaryIncome += c.grossIncome;
-    paye += c.studentLoan;
-    payeByCompany[c.company] += c.studentLoan;
-  }
 
+  const dividendComponents = getComponents(data, "dividend", null, taxYear, useFuture);
+  const interestComponents = getComponents(data, "interest", null, taxYear, useFuture);
   const totalDividendIncome = dividendComponents.reduce((acc, c) => acc + c.amount, 0);
   const totalInterestIncome = interestComponents.reduce((acc, c) => acc + c.amount, 0);
   const totalIncome = totalSalaryIncome + totalDividendIncome + totalInterestIncome;
@@ -74,6 +57,7 @@ const StudentLoan = props => {
 
 StudentLoan.propTypes = {
   taxYear: PropTypes.number.isRequired,
+  useFuture: PropTypes.bool,
 };
 
 export default StudentLoan;

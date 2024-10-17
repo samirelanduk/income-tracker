@@ -34,17 +34,119 @@ export const formatCurrency = amount => {
   });
 }
 
+
 export const formatDate = date => {
   /**
    * Formats a date as a string in the format "day month year".
    */
-  
+
   return new Date(date).toLocaleDateString("en-GB", {
     day: "numeric",
     month: "long",
     year: "numeric",
   });
 }
+
+
+export const getComponents = (companies, type, companyName, taxYear, useFuture) => {
+  /**
+   * Gets all the components defined in some transactions dataset. You can
+   * filter by component type, by company, or by tax year. You can also choose
+   * to include future transactions or not.
+   * 
+   * Salary components will be annotated with additional fields.
+   */
+
+  const components = [];
+  for (const company of companies) {
+    const cumulative = {};
+    if (companyName && company.name !== companyName) continue;
+    for (let t = 0; t < company.transactions.length; t++) {
+      const transaction = company.transactions[t];
+      if (!useFuture && transaction.future) continue;
+      for (const component of transaction.components || []) {
+        const personalTaxYear = dateToTaxYear(component.personalDate || transaction.date);
+        const companyTaxYear = dateToTaxYear(component.companyDate || transaction.date, company.monthStart);
+        if (!(personalTaxYear in cumulative)) {
+          cumulative[personalTaxYear] = {income: 0, incomeTax: 0, employeeNi: 0};
+        }
+        if (taxYear && (companyName ? companyTaxYear : personalTaxYear) !== taxYear) continue;
+        if (type && component.type !== type) continue;
+        const newComponent = {
+          ...component,
+          company: company.name,
+          color: company.color,
+          date: transaction.date,
+          future: transaction.future || false,
+          transactionIndex: t,
+        }
+        if (component.type === "salary") {
+          annotateSalaryComponent(
+            newComponent,
+            cumulative[personalTaxYear].income,
+            cumulative[personalTaxYear].incomeTax,
+            cumulative[personalTaxYear].employeeNi,
+            company.cumulativeNi
+          );
+          cumulative[personalTaxYear].income += newComponent.gross;
+          cumulative[personalTaxYear].incomeTax += newComponent.incomeTax;
+          cumulative[personalTaxYear].employeeNi += newComponent.employeeNI;
+        }
+        components.push(newComponent);
+      }
+    }
+  }
+  return components;
+}
+
+
+export const annotateSalaryComponent = (component, cumulativeIncome, cumulativeIncomeTax, cumulativeEmployeeNi, cumulativeNi) => {
+  /**
+   * Takes a salary component and annotates it. First it adds the deductions if
+   * they are not given (assumed to be zero if it's a past transaction,
+   * predicted if it's a future transaction). It then adds gross and net
+   * attributes - the original amount is assumed to be the gross amount if it's
+   * a future transaction, and the net amount if it's a past transaction.
+   */
+
+  if (component.future) {
+    if (component.incomeTax === undefined) {
+      component.incomeTax = predictIncomeTax(cumulativeIncome + component.amount, component.date, cumulativeIncomeTax);
+    } else {
+      component.incomeTax = component.incomeTax;
+    }
+    if (component.employeeNI === undefined) {
+      if (cumulativeNi) {
+        component.employeeNI = predictDirectorsEmployeeNi(
+          cumulativeIncome + component.amount,
+          component.date,
+          cumulativeEmployeeNi
+        );
+      } else {
+        component.employeeNI = predictEmployeeNI(component.amount, component.date);
+      }
+    } else {
+      component.employeeNI = component.employeeNI;
+    }
+    if (component.studentLoan === undefined) {
+      component.studentLoan = predictStudentLoan(component.amount, component.date);
+    } else {
+      component.studentLoan = component.studentLoan;
+    }
+    component.gross = component.amount;
+    component.net = component.amount - component.incomeTax - component.employeeNI - component.studentLoan;
+    component.net = Math.round(component.net * 100) / 100;
+  } else {
+    component.incomeTax = component.incomeTax || 0;
+    component.employeeNI = component.employeeNI || 0;
+    component.studentLoan = component.studentLoan || 0;
+    component.net = component.amount;
+    component.gross = component.amount + component.incomeTax + component.employeeNI + component.studentLoan;
+    component.gross = Math.round(component.gross * 100) / 100;
+  }
+}
+
+
 
 export const calculatePersonalAllowance = (totalIncome, defaultPersonalAllowance) => {
   return totalIncome <= defaultPersonalAllowance ? (
@@ -133,57 +235,6 @@ export const calculateStudentLoanOwed = (totalIncome, taxYear) => {
 }
 
 
-export const annotateSalaryComponents = components => {
-  const companies = [...new Set(components.map(c => c.company))];
-  const cumulativeSalaryByCompany = companies.reduce((acc, company) => {
-    acc[company] = 0;
-    return acc;
-  }, {});
-  const cumulativeIncomeTaxByCompany = companies.reduce((acc, company) => {
-    acc[company] = 0;
-    return acc;
-  }, {});
-  const cumulativeEmployeeNiByCompany = companies.reduce((acc, company) => {
-    acc[company] = 0;
-    return acc;
-  }, {});
-  for (const c of components) {
-    if (c.future) {
-      if (c.incomeTax === undefined) {
-        c.incomeTax = predictIncomeTax(cumulativeSalaryByCompany[c.company] + c.amount, c.date, cumulativeIncomeTaxByCompany[c.company]);
-      } else {
-        c.incomeTax = c.incomeTax || 0;
-      }
-      if (c.employeeNI === undefined) {
-        if (c.cumulativeNi) {
-          c.employeeNI = predictDirectorsEmployeeNi(cumulativeSalaryByCompany[c.company] + c.amount, c.date, cumulativeEmployeeNiByCompany[c.company]);
-        } else {
-          c.employeeNI = predictEmployeeNI(c.amount, c.date);
-        }
-      } else {
-        c.employeeNI = c.employeeNI || 0;
-      }
-      if (c.studentLoan === undefined) {
-        c.studentLoan = predictStudentLoan(c.amount, c.date);
-      } else {
-        c.studentLoan = c.studentLoan || 0;
-      }
-      c.employerNI = c.employerNI || 0;
-      c.grossIncome = c.amount;
-      c.net = c.amount - c.incomeTax - c.employeeNI - c.studentLoan;
-    } else {
-      c.incomeTax = c.incomeTax || 0;
-      c.employeeNI = c.employeeNI || 0;
-      c.studentLoan = c.studentLoan || 0;
-      c.net = c.amount;
-      c.grossIncome = c.amount + c.incomeTax + c.employeeNI + c.studentLoan;
-    }
-    cumulativeSalaryByCompany[c.company] += c.grossIncome;
-    cumulativeIncomeTaxByCompany[c.company] += c.incomeTax;
-    cumulativeEmployeeNiByCompany[c.company] += c.employeeNI;
-  }
-};
-
 const predictIncomeTax = (salaryToDate, date, incomeTaxToDate) => {
   const taxYear = dateToTaxYear(date);
   const incomeTaxData = incomeTax[taxYear];
@@ -201,7 +252,7 @@ const predictIncomeTax = (salaryToDate, date, incomeTaxToDate) => {
   const projectedTotalSalary = salaryToDate / monthNumber * 12;
 
   // What personal allowance would this imply?
-  const annualPersonalAllowance = calculatePersonalAllowance(salaryIncomeTaxData.personalAllowance + 9, taxYear);
+  const annualPersonalAllowance = calculatePersonalAllowance(incomeTaxData.personalAllowance + 9, taxYear);
 
   // What are the thresholds for this point in the year?
   const personalAllowance = annualPersonalAllowance / 12 * monthNumber;
@@ -211,46 +262,25 @@ const predictIncomeTax = (salaryToDate, date, incomeTaxToDate) => {
   // How much income is taxable?
   const taxableIncome = Math.max(salaryToDate - personalAllowance, 0);
 
+  let taxOwed = 0;
 
   if (taxableIncome <= higherBand) {
-    return taxableIncome * salaryIncomeTaxData.basic - incomeTaxToDate;
-  }
-  if (taxableIncome <= additionalBand) {
-    return (
+    taxOwed = taxableIncome * salaryIncomeTaxData.basic;
+  } else if (taxableIncome <= additionalBand) {
+    taxOwed = (
       (higherBand * salaryIncomeTaxData.basic) +
       (taxableIncome - higherBand) * salaryIncomeTaxData.higher
+    );
+  } else {
+    taxOwed = (
+      (higherBand * salaryIncomeTaxData.basic) +
+      (additionalBand - higherBand) * salaryIncomeTaxData.higher +
+      (taxableIncome - additionalBand) * salaryIncomeTaxData.additional
     ) - incomeTaxToDate;
   }
-  return (
-    (higherBand * salaryIncomeTaxData.basic) +
-    (additionalBand - higherBand) * salaryIncomeTaxData.higher +
-    (taxableIncome - additionalBand) * salaryIncomeTaxData.additional
-  ) - incomeTaxToDate;
+
+  return Math.round((taxOwed - incomeTaxToDate) * 100) / 100;
   
-  
-
-
-
-
-  /* const incomeTaxData = incomeTax[taxYear];
-  const salaryIncomeTaxData = salaryIncomeTax[taxYear];
-  const personalAllowance = calculatePersonalAllowance(totalIncome, taxYear);
-  const taxableIncome = Math.max(salaryIncome - personalAllowance, 0);
-  if (taxableIncome === 0) return 0;
-  if (taxableIncome <= incomeTaxData.higherBand) {
-    return taxableIncome * salaryIncomeTaxData.basic;
-  }
-  if (taxableIncome <= incomeTaxData.additionalBand) {
-    return (
-      (incomeTaxData.higherBand * salaryIncomeTaxData.basic) +
-      (taxableIncome - incomeTaxData.higherBand) * salaryIncomeTaxData.higher
-    );
-  }
-  return (
-    (incomeTaxData.higherBand * salaryIncomeTaxData.basic) +
-    (incomeTaxData.additionalBand - incomeTaxData.higherBand) * salaryIncomeTaxData.higher +
-    (taxableIncome - incomeTaxData.additionalBand) * salaryIncomeTaxData.additional
-  ); */
 }
 
 const predictEmployeeNI = (amount, date) => {
@@ -261,9 +291,15 @@ const predictEmployeeNI = (amount, date) => {
   const mostRecentData = niData[mostRecentDateToDate];
   const pt = mostRecentData.pt / 12;
   const uel = mostRecentData.uel / 12;
-  if (amount <= pt) return 0;
-  if (amount <= uel) return (amount - pt) * mostRecentData.employeeRate1;
-  return (uel - pt) * mostRecentData.employeeRate1 + (amount - uel) * mostRecentData.employeeRate2;
+  let owed;
+  if (amount <= pt) {
+    owed = 0;
+  } else if (amount <= uel) {
+   owed = (amount - pt) * mostRecentData.employeeRate1;
+  } else {
+    owed = (uel - pt) * mostRecentData.employeeRate1 + (amount - uel) * mostRecentData.employeeRate2;
+  }
+  return Math.round(owed * 100) / 100;
 }
 
 const predictDirectorsEmployeeNi = (salaryToDate, date, employeeNIToDate) => {
@@ -282,7 +318,7 @@ const predictDirectorsEmployeeNi = (salaryToDate, date, employeeNIToDate) => {
   } else {
     owedForYear = (uel - pt) * mostRecentData.employeeRate1 + (salaryToDate - uel) * mostRecentData.employeeRate2;
   }
-  return owedForYear - employeeNIToDate;
+  return Math.round((owedForYear - employeeNIToDate) * 100) / 100;
 }
 
 const predictStudentLoan = (amount, date) => {
@@ -290,5 +326,6 @@ const predictStudentLoan = (amount, date) => {
   const studentLoanData = studentLoan[taxYear];
   const threshold = studentLoanData.threshold / 12;
   const rate = studentLoanData.rate;
-  return parseInt(Math.max(amount - threshold, 0) * rate);
+  const owed = parseInt(Math.max(amount - threshold, 0) * rate);
+  return Math.round(owed * 100) / 100;
 }

@@ -1,44 +1,19 @@
 import React from "react";
 import PropTypes from "prop-types";
 import { data, taxReturns, hmrcPayments } from "../data";
-import { studentLoan } from "../hmrc";
-import { calculateDividendIncomeTaxOwed, calculateSalaryIncomeTaxOwed, dateToTaxYear, calculateStudentLoanOwed, formatCurrency, formatDate, annotateSalaryComponents } from "../utils";
+import { calculateDividendIncomeTaxOwed, calculateSalaryIncomeTaxOwed, calculateStudentLoanOwed, formatCurrency, formatDate, getComponents } from "../utils";
 
 const TaxReturn = props => {
 
   const { taxYear, useFuture } = props;
 
-  const allTransactions = data.flatMap(c => c.transactions.map(t => ({...t, company: c.name})));
-  const components = allTransactions.filter(t => t.components).map(
-    t => t.components.map(c => ({...c, company: t.company, date: t.date, future: t.future}))
-  ).flat();
-  const salaryComponents = components.filter(c => c.type === "salary").filter(
-    c => dateToTaxYear(c.personalDate || c.date) === taxYear && (useFuture || !c.future)
-  )
-  annotateSalaryComponents(salaryComponents);
-  const dividendComponents = components.filter(c => c.type === "dividend").filter(
-    c => dateToTaxYear(c.personalDate || c.date) === taxYear && (useFuture || !c.future)
-  );
-  const interestComponents = components.filter(c => c.type === "interest").filter(
-    c => dateToTaxYear(c.personalDate || c.date) === taxYear && (useFuture || !c.future)
-  );
+  const salaryComponents = getComponents(data, "salary", null, taxYear, useFuture);
+  const dividendComponents = getComponents(data, "dividend", null, taxYear, useFuture);
+  const interestComponents = getComponents(data, "interest", null, taxYear, useFuture);
 
-  let payeIT = 0;
-  let payeSL = 0;
-  let totalSalaryIncome = 0;
-  const payeITByCompany = data.reduce((acc, c) => {
-    return {...acc, [c.name]: 0};
-  }, {});
-  const payeSLByCompany = data.reduce((acc, c) => {
-    return {...acc, [c.name]: 0};
-  }, {});
-  for (const c of salaryComponents) {
-    totalSalaryIncome += c.grossIncome;
-    payeIT += c.incomeTax;
-    payeSL += c.studentLoan;
-    payeITByCompany[c.company] += c.incomeTax;
-    payeSLByCompany[c.company] += c.studentLoan;
-  }
+  const totalSalaryIncome = salaryComponents.reduce((acc, c) => acc + c.gross, 0);
+  const payeIT = salaryComponents.reduce((acc, c) => acc + c.incomeTax, 0);
+  const payeSL = salaryComponents.reduce((acc, c) => acc + c.studentLoan, 0);
 
   const totalDividendIncome = dividendComponents.reduce((acc, c) => acc + c.amount, 0);
   const totalInterestIncome = interestComponents.reduce((acc, c) => acc + c.amount, 0);
@@ -48,7 +23,6 @@ const TaxReturn = props => {
   const dividendIncomeTaxOwed = calculateDividendIncomeTaxOwed(totalIncome, totalDividendIncome, taxYear);
   const incomeTaxOwed = salaryIncomeTaxOwed + dividendIncomeTaxOwed;
   const incomeTaxHmrc = incomeTaxOwed - payeIT;
-
 
   const studentLoanOwed = calculateStudentLoanOwed(totalIncome, taxYear);
   const studentLoanHmrc = parseInt(studentLoanOwed - payeSL);
@@ -127,6 +101,7 @@ const TaxReturn = props => {
 
 TaxReturn.propTypes = {
   taxYear: PropTypes.number.isRequired,
+  useFuture: PropTypes.bool.isRequired,
 };
 
 export default TaxReturn;

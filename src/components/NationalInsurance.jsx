@@ -1,31 +1,18 @@
 import React from "react";
 import PropTypes from "prop-types";
 import { data } from "../data";
-import { dateToTaxYear, formatCurrency, annotateSalaryComponents } from "../utils";
+import { formatCurrency, getComponents } from "../utils";
 
 const NationalInsurance = props => {
 
   const { taxYear, useFuture } = props;
 
-  const allTransactions = data.flatMap(c => c.transactions.map(t => ({...t, company: c.name})));
-  const components = allTransactions.filter(t => t.components).map(
-    t => t.components.map(c => ({...c, company: t.company, date: t.date, future: t.future}))
-  ).flat();
-  const salaryComponents = components.filter(c => c.type === "salary").filter(
-    c => dateToTaxYear(c.personalDate || c.date) === taxYear && (useFuture || !c.future)
-  )
-  annotateSalaryComponents(salaryComponents);
-
-  let paye = 0;
-  let totalSalaryIncome = 0;
+  const salaryComponents = getComponents(data, "salary", null, taxYear, useFuture);
+  const paye = salaryComponents.reduce((acc, c) => acc + c.employeeNI, 0);
   const payeByCompany = data.reduce((acc, c) => {
-    return {...acc, [c.name]: 0};
+    const paye = salaryComponents.filter(s => s.company === c.name).reduce((acc, s) => acc + s.employeeNI, 0);
+    return {...acc, [c.name]: paye};
   }, {});
-  for (const c of salaryComponents) {
-    totalSalaryIncome += c.grossIncome;
-    paye += c.employeeNI;
-    payeByCompany[c.company] += c.employeeNI;
-  }
 
   return (
     <div className={`${props.className || ""}`}>
@@ -45,6 +32,7 @@ const NationalInsurance = props => {
 
 NationalInsurance.propTypes = {
   taxYear: PropTypes.number.isRequired,
+  useFuture: PropTypes.bool,
 };
 
 export default NationalInsurance;
