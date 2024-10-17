@@ -68,7 +68,7 @@ export const getComponents = (companies, type, companyName, taxYear, useFuture) 
         const personalTaxYear = dateToTaxYear(component.personalDate || transaction.date);
         const companyTaxYear = dateToTaxYear(component.companyDate || transaction.date, company.monthStart);
         if (!(personalTaxYear in cumulative)) {
-          cumulative[personalTaxYear] = {income: 0, incomeTax: 0, employeeNi: 0};
+          cumulative[personalTaxYear] = {income: 0, incomeByDate: {}, incomeTax: 0, employeeNi: 0};
         }
         if (taxYear && (companyName ? companyTaxYear : personalTaxYear) !== taxYear) continue;
         if (type && component.type !== type) continue;
@@ -147,19 +147,157 @@ export const annotateSalaryComponent = (component, cumulativeIncome, cumulativeI
 }
 
 
+export const calculatePersonalAllowance = (totalIncome, defaultPersonalAllowance, taxYear) => {
+  /**
+   * Calculates the personal allowance for a given total income, defaulting to
+   * the default personal allowance if the total income is below the threshold.
+   */
 
-export const calculatePersonalAllowance = (totalIncome, defaultPersonalAllowance) => {
-  return totalIncome <= defaultPersonalAllowance ? (
+  const threshold = incomeTax[taxYear].personalAllowanceThreshold;
+  return totalIncome <= threshold ? (
     defaultPersonalAllowance
   ) : Math.max(defaultPersonalAllowance - (
-    totalIncome - defaultPersonalAllowance
+    totalIncome - threshold
   ) / 2, 0);
 }
+
+
+export const predictIncomeTax = (salaryToDate, date, incomeTaxToDate) => {
+  /**
+   * Predicts what the income tax deduction will be for a given monthly salary
+   * payment. Standard tax code is assumed.
+   */
+
+  const taxYear = dateToTaxYear(date);
+  const incomeTaxData = incomeTax[taxYear];
+  const salaryIncomeTaxData = salaryIncomeTax[taxYear];
+  const monthIndex = new Date(date).getMonth();
+  const monthNumber = monthIndex < 3 ? monthIndex + 10 : monthIndex - 2;
+  const projectedTotalSalary = salaryToDate / monthNumber * 12;
+  const annualPersonalAllowance = calculatePersonalAllowance(
+    projectedTotalSalary, incomeTaxData.personalAllowance + 9, taxYear
+  );
+  const personalAllowance = annualPersonalAllowance / 12 * monthNumber;
+  const higherBand = incomeTaxData.higherBand / 12 * monthNumber;
+  const additionalBand = incomeTaxData.additionalBand / 12 * monthNumber;
+  const taxableIncome = Math.max(salaryToDate - personalAllowance, 0);
+  let taxOwed = 0;
+  if (taxableIncome <= higherBand) {
+    taxOwed = taxableIncome * salaryIncomeTaxData.basic;
+  } else if (taxableIncome <= additionalBand) {
+    taxOwed = (
+      (higherBand * salaryIncomeTaxData.basic) +
+      (taxableIncome - higherBand) * salaryIncomeTaxData.higher
+    );
+  } else {
+    taxOwed = (
+      (higherBand * salaryIncomeTaxData.basic) +
+      (additionalBand - higherBand) * salaryIncomeTaxData.higher +
+      (taxableIncome - additionalBand) * salaryIncomeTaxData.additional
+    );
+  }
+  return Math.round((taxOwed - incomeTaxToDate) * 100) / 100;
+}
+
+
+export const predictEmployeeNI = (amount, date) => {
+  /**
+   * Predicts what the employee national insurance deduction will be for a given
+   * monthly salary payment, assuming they are not using the cumulative method.
+   */
+
+  const taxYear = dateToTaxYear(date);
+  const niData = nationalInsurance[taxYear];
+  const dates = Object.keys(niData);
+  const mostRecentDateToDate = dates.filter(
+    d => new Date(d) <= new Date(date)
+  ).sort().reverse()[0];
+  const mostRecentData = niData[mostRecentDateToDate];
+  const pt = mostRecentData.pt;
+  const uel = mostRecentData.uel;
+  let owed;
+  if (amount <= pt) {
+    owed = 0;
+  } else if (amount <= uel) {
+   owed = (amount - pt) * mostRecentData.employeeRate1;
+  } else {
+    owed = (uel - pt) * mostRecentData.employeeRate1 + 
+    (amount - uel) * mostRecentData.employeeRate2;
+  }
+  return Math.round(owed * 100) / 100;
+}
+
+
+export const predictDirectorsEmployeeNi = (salaryToDate, date, employeeNIToDate) => {
+  /**
+   * Predicts what the employee national insurance deduction will be for a given
+   * monthly salary payment, assuming they are using the cumulative method.
+   */
+
+  const taxYear = dateToTaxYear(date);
+  const niData = nationalInsurance[taxYear];
+  const rate1s = [];
+  const rate2s = [];
+  for (let n = 0; n < Object.keys(niData).length; n++) {
+    const [start, periodData] = Object.entries(niData)[n];
+    if (new Date(start) > new Date(date)) continue;
+    const end = Object.keys(niData)[n - 1] || `${taxYear + 1}-04-06`;
+    const startMonth = parseInt(start.split("-")[1]);
+    const endMonth = parseInt(end.split("-")[1]);
+    const months = endMonth > startMonth ? endMonth - startMonth : 12 - startMonth + endMonth;
+    rate1s.push({rate: periodData.employeeRate1, months: months});
+    rate2s.push({rate: periodData.employeeRate2, months: months});
+  }
+  const totalMonths = rate1s.map(r => r.months).reduce((a, b) => a + b, 0);
+  const rate1 = rate1s.map(r => r.rate * (r.months / totalMonths)).reduce((a, b) => a + b, 0);
+  const rate2 = rate2s.map(r => r.rate * (r.months / totalMonths)).reduce((a, b) => a + b, 0);
+  const dates = Object.keys(niData);
+  const mostRecentDateToDate = dates.filter(d => new Date(d) <= new Date(date)).sort().reverse()[0];
+  const mostRecentData = niData[mostRecentDateToDate];
+  const pt = mostRecentData.annualPt;
+  const uel = mostRecentData.annualUel;
+  let owedForYear;
+  if (salaryToDate < pt) {
+    owedForYear = 0;
+  } else if (salaryToDate < uel) {
+    owedForYear = (salaryToDate - pt) * rate1
+  } else {
+    owedForYear = (uel - pt) * rate1 + (salaryToDate - uel) * rate2;
+  }
+  return Math.round((owedForYear - employeeNIToDate) * 100) / 100;
+}
+
+
+export const predictStudentLoan = (amount, date) => {
+  /**
+   * Predicts what the plan 1 student loan deduction will be for a given monthly
+   * salary payment.
+   */
+  
+  const taxYear = dateToTaxYear(date);
+  const studentLoanData = studentLoan[taxYear];
+  const threshold = studentLoanData.threshold / 12;
+  const rate = studentLoanData.rate;
+  const owed = parseInt(Math.max(amount - threshold, 0) * rate);
+  return Math.round(owed * 100) / 100;
+}
+
+
+
+
+
+
+
+
+
+
+
+
 
 export const calculateSalaryIncomeTaxOwed = (totalIncome, salaryIncome, taxYear) => {
   const incomeTaxData = incomeTax[taxYear];
   const salaryIncomeTaxData = salaryIncomeTax[taxYear];
-  const personalAllowance = calculatePersonalAllowance(totalIncome, incomeTaxData.personalAllowance);
+  const personalAllowance = calculatePersonalAllowance(totalIncome, incomeTaxData.personalAllowance, taxYear);
   const taxableIncome = Math.max(salaryIncome - personalAllowance, 0);
   if (taxableIncome === 0) return 0;
   if (taxableIncome <= incomeTaxData.higherBand) {
@@ -184,7 +322,7 @@ export const calculateDividendIncomeTaxOwed = (totalIncome, dividendIncome, taxY
   const dividendIncomeTaxData = dividendIncomeTax[taxYear];
   const dividends = dividendIncome;
   const allowance = dividendAllowance[taxYear];
-  let personalAllowance = calculatePersonalAllowance(totalIncome, incomeTaxData.personalAllowance);
+  let personalAllowance = calculatePersonalAllowance(totalIncome, incomeTaxData.personalAllowance, taxYear);
   const salaryOverPersonalAllowance = Math.max(salaryIncome - personalAllowance, 0);
   const higherBand = Math.max(incomeTaxData.higherBand - salaryOverPersonalAllowance, 0);
   const additionalBand = Math.max(incomeTaxData.additionalBand - salaryOverPersonalAllowance, 0);
@@ -234,98 +372,3 @@ export const calculateStudentLoanOwed = (totalIncome, taxYear) => {
   return Math.max(totalIncome - studentLoanData.threshold, 0) * studentLoanData.rate;
 }
 
-
-const predictIncomeTax = (salaryToDate, date, incomeTaxToDate) => {
-  const taxYear = dateToTaxYear(date);
-  const incomeTaxData = incomeTax[taxYear];
-  const salaryIncomeTaxData = salaryIncomeTax[taxYear];
-
-
-
-
-  // What is the month number (April = 1, March = 12)
-  const monthIndex = new Date(date).getMonth();
-  const year = new Date(date).getFullYear();
-  const monthNumber = monthIndex < 3 ? monthIndex + 10 : monthIndex - 2;
-
-  // What is the projected total salary for the year?
-  const projectedTotalSalary = salaryToDate / monthNumber * 12;
-
-  // What personal allowance would this imply?
-  const annualPersonalAllowance = calculatePersonalAllowance(incomeTaxData.personalAllowance + 9, taxYear);
-
-  // What are the thresholds for this point in the year?
-  const personalAllowance = annualPersonalAllowance / 12 * monthNumber;
-  const higherBand = incomeTaxData.higherBand / 12 * monthNumber;
-  const additionalBand = incomeTaxData.additionalBand / 12 * monthNumber;
-
-  // How much income is taxable?
-  const taxableIncome = Math.max(salaryToDate - personalAllowance, 0);
-
-  let taxOwed = 0;
-
-  if (taxableIncome <= higherBand) {
-    taxOwed = taxableIncome * salaryIncomeTaxData.basic;
-  } else if (taxableIncome <= additionalBand) {
-    taxOwed = (
-      (higherBand * salaryIncomeTaxData.basic) +
-      (taxableIncome - higherBand) * salaryIncomeTaxData.higher
-    );
-  } else {
-    taxOwed = (
-      (higherBand * salaryIncomeTaxData.basic) +
-      (additionalBand - higherBand) * salaryIncomeTaxData.higher +
-      (taxableIncome - additionalBand) * salaryIncomeTaxData.additional
-    ) - incomeTaxToDate;
-  }
-
-  return Math.round((taxOwed - incomeTaxToDate) * 100) / 100;
-  
-}
-
-const predictEmployeeNI = (amount, date) => {
-  const taxYear = dateToTaxYear(date);
-  const niData = nationalInsurance[taxYear];
-  const dates = Object.keys(niData);
-  const mostRecentDateToDate = dates.filter(d => new Date(d) <= new Date(date)).sort().reverse()[0];
-  const mostRecentData = niData[mostRecentDateToDate];
-  const pt = mostRecentData.pt / 12;
-  const uel = mostRecentData.uel / 12;
-  let owed;
-  if (amount <= pt) {
-    owed = 0;
-  } else if (amount <= uel) {
-   owed = (amount - pt) * mostRecentData.employeeRate1;
-  } else {
-    owed = (uel - pt) * mostRecentData.employeeRate1 + (amount - uel) * mostRecentData.employeeRate2;
-  }
-  return Math.round(owed * 100) / 100;
-}
-
-const predictDirectorsEmployeeNi = (salaryToDate, date, employeeNIToDate) => {
-  const taxYear = dateToTaxYear(date);
-  const niData = nationalInsurance[taxYear];
-  const dates = Object.keys(niData);
-  const mostRecentDateToDate = dates.filter(d => new Date(d) <= new Date(date)).sort().reverse()[0];
-  const mostRecentData = niData[mostRecentDateToDate];
-  const pt = mostRecentData.pt;
-  const uel = mostRecentData.uel;
-  let owedForYear;
-  if (salaryToDate < pt) {
-    owedForYear = 0;
-  } else if (salaryToDate < uel) {
-    owedForYear = (salaryToDate - pt) * mostRecentData.employeeRate1;
-  } else {
-    owedForYear = (uel - pt) * mostRecentData.employeeRate1 + (salaryToDate - uel) * mostRecentData.employeeRate2;
-  }
-  return Math.round((owedForYear - employeeNIToDate) * 100) / 100;
-}
-
-const predictStudentLoan = (amount, date) => {
-  const taxYear = dateToTaxYear(date);
-  const studentLoanData = studentLoan[taxYear];
-  const threshold = studentLoanData.threshold / 12;
-  const rate = studentLoanData.rate;
-  const owed = parseInt(Math.max(amount - threshold, 0) * rate);
-  return Math.round(owed * 100) / 100;
-}
