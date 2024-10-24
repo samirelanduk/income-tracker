@@ -2,6 +2,7 @@ import { dateToTaxYear, formatCurrency, formatDate } from "../utils";
 import { getComponents, annotateSalaryComponent } from "../utils";
 import { calculatePersonalAllowance } from "../utils";
 import { predictIncomeTax, predictEmployeeNI, predictDirectorsEmployeeNi, predictStudentLoan } from "../utils";
+import { calculateIncomeTaxOwed, calculateSalaryIncomeTaxOwed, calculateInterestIncomeTaxOwed, calculateStudentLoanOwed } from "../utils";
 
 describe("dateToTaxYear", () => {
 
@@ -478,8 +479,8 @@ describe("getComponents", () => {
       {type: "salary", amount: 5000, incomeTax: 952.37, employeeNI: 472.35, studentLoan: 298, color: "red", company: "Sunrise Ventures", date: "2022-04-06", future: true, gross: 5000, net: 3277.28, transactionIndex: 6},
       {type: "salary", amount: 5000, incomeTax: 952.36, employeeNI: 472.35, studentLoan: 298, color: "red", company: "Sunrise Ventures", date: "2022-05-06", future: true, gross: 5000, net: 3277.29, transactionIndex: 7},
       {type: "salary", amount: 5000, incomeTax: 0, employeeNI: 0, studentLoan: 0, color: "red", company: "Sunrise Ventures", date: "2022-06-06", future: true, gross: 5000, net: 5000, transactionIndex: 8},
-      {type: "salary", amount: 50000, incomeTax: 20427.21, employeeNI: 1905.04, studentLoan: 4348, color: "red", company: "Sunrise Ventures", date: "2022-07-06", future: true, gross: 50000, net: 23319.75, transactionIndex: 9},
-      {type: "salary", amount: 5000, incomeTax: -19430.55, employeeNI: 442.54, studentLoan: 298, color: "red", company: "Sunrise Ventures", date: "2022-08-06", future: true, gross: 5000, net: 23690.01, transactionIndex: 10},
+      {type: "salary", amount: 50000, incomeTax: 22331.94, employeeNI: 1905.04, studentLoan: 4348, color: "red", company: "Sunrise Ventures", date: "2022-07-06", future: true, gross: 50000, net: 21415.02, transactionIndex: 9},
+      {type: "salary", amount: 5000, incomeTax: 996.66, employeeNI: 442.54, studentLoan: 298, color: "red", company: "Sunrise Ventures", date: "2022-08-06", future: true, gross: 5000, net: 3262.8, transactionIndex: 10},
 
       {type: "salary", amount: 3200, incomeTax: 1000, employeeNI: 200, studentLoan: 600, color: "purple", company: "Blue Horizon", date: "2021-10-06", future: false, gross: 5000, net: 3200, transactionIndex: 0},
       {type: "salary", amount: 3200, incomeTax: 1000, employeeNI: 200, studentLoan: 600, color: "purple", company: "Blue Horizon", date: "2021-11-06", future: false, gross: 5000, net: 3200, transactionIndex: 1},
@@ -491,8 +492,8 @@ describe("getComponents", () => {
       {type: "salary", amount: 5000, incomeTax: 952.37, employeeNI: 0, studentLoan: 298, color: "purple", company: "Blue Horizon", date: "2022-04-06", future: true, gross: 5000, net: 3749.63, transactionIndex: 6},
       {type: "salary", amount: 5000, incomeTax: 952.36, employeeNI: 0, studentLoan: 298, color: "purple", company: "Blue Horizon", date: "2022-05-06", future: true, gross: 5000, net: 3749.64, transactionIndex: 7},
       {type: "salary", amount: 5000, incomeTax: 0, employeeNI: 0, studentLoan: 0, color: "purple", company: "Blue Horizon", date: "2022-06-06", future: true, gross: 5000, net: 5000, transactionIndex: 8},
-      {type: "salary", amount: 50000, incomeTax: 20427.21, employeeNI: 5561.69, studentLoan: 4348, color: "purple", company: "Blue Horizon", date: "2022-07-06", future: true, gross: 50000, net: 19663.1, transactionIndex: 9},
-      {type: "salary", amount: 5000, incomeTax: -19430.55, employeeNI: 162.5, studentLoan: 298, color: "purple", company: "Blue Horizon", date: "2022-08-06", future: true, gross: 5000, net: 23970.05, transactionIndex: 10},
+      {type: "salary", amount: 50000, incomeTax: 22331.94, employeeNI: 5561.69, studentLoan: 4348, color: "purple", company: "Blue Horizon", date: "2022-07-06", future: true, gross: 50000, net: 17758.37, transactionIndex: 9},
+      {type: "salary", amount: 5000, incomeTax: 996.66, employeeNI: 162.5, studentLoan: 298, color: "purple", company: "Blue Horizon", date: "2022-08-06", future: true, gross: 5000, net: 3542.84, transactionIndex: 10},
     ]);
   });
 
@@ -711,4 +712,398 @@ describe("predictStudentLoan", () => {
     expect(predictStudentLoan(11000, "2022-10-25")).toBe(838);
   });
 
-})
+});
+
+
+describe("calculateIncomeTaxOwed", () => {
+
+  test("All salary, below personal allowance", () => {
+    expect(calculateIncomeTaxOwed(0, 0, 0, 2020)).toEqual([0, []]);
+    expect(calculateIncomeTaxOwed(12500, 0, 0, 2020)).toEqual([0, [
+      {amount: 12500, region: 0, rate: 0, type: "salary"},
+    ]]);
+    expect(calculateIncomeTaxOwed(12570, 0, 0, 2021)).toEqual([0, [
+      {amount: 12570, region: 0, rate: 0, type: "salary"},
+     ]]);
+  });
+
+  test("All salary, basic rate", () => {
+    expect(calculateIncomeTaxOwed(12501, 0, 0, 2020)).toEqual([0.2, [
+      {amount: 12500, region: 0, rate: 0, type: "salary"},
+      {amount: 1, region: 1, rate: 0.2, type: "salary"},
+    ]]);
+    expect(calculateIncomeTaxOwed(50000, 0, 0, 2020)).toEqual([7500, [
+      {amount: 12500, region: 0, rate: 0, type: "salary"},
+      {amount: 37500, region: 1, rate: 0.2, type: "salary"},
+    ]]);
+  });
+
+  test("All salary, higher rate", () => {
+    expect(calculateIncomeTaxOwed(50001, 0, 0, 2020)).toEqual([7500.4, [
+      {amount: 12500, region: 0, rate: 0, type: "salary"},
+      {amount: 37500, region: 1, rate: 0.2, type: "salary"},
+      {amount: 1, region: 2, rate: 0.4, type: "salary"},
+    ]]);
+    expect(calculateIncomeTaxOwed(100000, 0, 0, 2020)).toEqual([27500, [
+      {amount: 12500, region: 0, rate: 0, type: "salary"},
+      {amount: 37500, region: 1, rate: 0.2, type: "salary"},
+      {amount: 50000, region: 2, rate: 0.4, type: "salary"},
+    ]]);
+  });
+
+  test("All salary, tapered higher rate", () => {
+    expect(calculateIncomeTaxOwed(100001, 0, 0, 2020)).toEqual([27500.6, [
+      {amount: 12499.5, region: 0, rate: 0, type: "salary"},
+      {amount: 37500, region: 1, rate: 0.2, type: "salary"},
+      {amount: 50001.5, region: 2, rate: 0.4, type: "salary"},
+    ]]);
+    expect(calculateIncomeTaxOwed(115000, 0, 0, 2020)).toEqual([36500, [
+      {amount: 5000, region: 0, rate: 0, type: "salary"},
+      {amount: 37500, region: 1, rate: 0.2, type: "salary"},
+      {amount: 72500, region: 2, rate: 0.4, type: "salary"},
+    ]]);
+    expect(calculateIncomeTaxOwed(125000, 0, 0, 2020)).toEqual([42500, [
+      {amount: 37500, region: 1, rate: 0.2, type: "salary"},
+      {amount: 87500, region: 2, rate: 0.4, type: "salary"},
+    ]]);
+    expect(calculateIncomeTaxOwed(150000, 0, 0, 2020)).toEqual([52500, [
+      {amount: 37500, region: 1, rate: 0.2, type: "salary"},
+      {amount: 112500, region: 2, rate: 0.4, type: "salary"},
+    ]]);
+  });
+
+  test("All salary, additional rate", () => {
+    expect(calculateIncomeTaxOwed(150001, 0, 0, 2020)).toEqual([52500.45, [
+      {amount: 37500, region: 1, rate: 0.2, type: "salary"},
+      {amount: 112500, region: 2, rate: 0.4, type: "salary"},
+      {amount: 1, region: 3, rate: 0.45, type: "salary"},
+    ]]);
+    expect(calculateIncomeTaxOwed(200000, 0, 0, 2020)).toEqual([75000, [
+      {amount: 37500, region: 1, rate: 0.2, type: "salary"},
+      {amount: 112500, region: 2, rate: 0.4, type: "salary"},
+      {amount: 50000, region: 3, rate: 0.45, type: "salary"},
+    ]]);
+  });
+
+  test("All interest, below threshold", () => {
+    expect(calculateIncomeTaxOwed(0, 12500, 0, 2020)).toEqual([0, [
+      {amount: 12500, region: 0, rate: 0, type: "interest"},
+    ]]);
+    expect(calculateIncomeTaxOwed(0, 12501, 0, 2020)).toEqual([0, [
+      {amount: 12500, region: 0, rate: 0, type: "interest"},
+      {amount: 1, region: 1, rate: 0, type: "interest"},
+    ]]);
+    expect(calculateIncomeTaxOwed(0, 13500, 0, 2020)).toEqual([0, [
+      {amount: 12500, region: 0, rate: 0, type: "interest"},
+      {amount: 1000, region: 1, rate: 0, type: "interest"},
+    ]]);
+    expect(calculateIncomeTaxOwed(0, 13501, 0, 2020)).toEqual([0, [
+      {amount: 12500, region: 0, rate: 0, type: "interest"},
+      {amount: 1000, region: 1, rate: 0, type: "interest"},
+      {amount: 1, region: 1, rate: 0, type: "interest"},
+    ]]);
+    expect(calculateIncomeTaxOwed(0, 18500, 0, 2020)).toEqual([0, [
+      {amount: 12500, region: 0, rate: 0, type: "interest"},
+      {amount: 1000, region: 1, rate: 0, type: "interest"},
+      {amount: 5000, region: 1, rate: 0, type: "interest"},
+    ]]);
+  });
+
+  test("All interest, basic rate", () => {
+    expect(calculateIncomeTaxOwed(0, 18501, 0, 2020)).toEqual([0.2, [
+      {amount: 12500, region: 0, rate: 0, type: "interest"},
+      {amount: 1000, region: 1, rate: 0, type: "interest"},
+      {amount: 5000, region: 1, rate: 0, type: "interest"},
+      {amount: 1, region: 1, rate: 0.2, type: "interest"},
+    ]]);
+    expect(calculateIncomeTaxOwed(0, 50000, 0, 2020)).toEqual([6300, [
+      {amount: 12500, region: 0, rate: 0, type: "interest"},
+      {amount: 1000, region: 1, rate: 0, type: "interest"},
+      {amount: 5000, region: 1, rate: 0, type: "interest"},
+      {amount: 31500, region: 1, rate: 0.2, type: "interest"},
+    ]]);
+  });
+
+  test("All interest, higher rate", () => {
+    expect(calculateIncomeTaxOwed(0, 50001, 0, 2020)).toEqual([6400.4, [
+      {amount: 12500, region: 0, rate: 0, type: "interest"},
+      {amount: 500, region: 1, rate: 0, type: "interest"},
+      {amount: 5000, region: 1, rate: 0, type: "interest"},
+      {amount: 32000, region: 1, rate: 0.2, type: "interest"},
+      {amount: 1, region: 2, rate: 0.4, type: "interest"},
+    ]]);
+    expect(calculateIncomeTaxOwed(0, 100000, 0, 2020)).toEqual([26400, [
+      {amount: 12500, region: 0, rate: 0, type: "interest"},
+      {amount: 500, region: 1, rate: 0, type: "interest"},
+      {amount: 5000, region: 1, rate: 0, type: "interest"},
+      {amount: 32000, region: 1, rate: 0.2, type: "interest"},
+      {amount: 50000, region: 2, rate: 0.4, type: "interest"},
+    ]]);
+  });
+
+  test("All interest, tapered higher rate", () => {
+    expect(calculateIncomeTaxOwed(0, 100001, 0, 2020)).toEqual([26400.6, [
+      {amount: 12499.5, region: 0, rate: 0, type: "interest"},
+      {amount: 500, region: 1, rate: 0, type: "interest"},
+      {amount: 5000, region: 1, rate: 0, type: "interest"},
+      {amount: 32000, region: 1, rate: 0.2, type: "interest"},
+      {amount: 50001.5, region: 2, rate: 0.4, type: "interest"},
+    ]]);
+    expect(calculateIncomeTaxOwed(0, 115000, 0, 2020)).toEqual([35400, [
+      {amount: 5000, region: 0, rate: 0, type: "interest"},
+      {amount: 500, region: 1, rate: 0, type: "interest"},
+      {amount: 5000, region: 1, rate: 0, type: "interest"},
+      {amount: 32000, region: 1, rate: 0.2, type: "interest"},
+      {amount: 72500, region: 2, rate: 0.4, type: "interest"},
+    ]]);
+    expect(calculateIncomeTaxOwed(0, 125000, 0, 2020)).toEqual([41400, [
+      {amount: 500, region: 1, rate: 0, type: "interest"},
+      {amount: 5000, region: 1, rate: 0, type: "interest"},
+      {amount: 32000, region: 1, rate: 0.2, type: "interest"},
+      {amount: 87500, region: 2, rate: 0.4, type: "interest"},
+    ]]);
+    expect(calculateIncomeTaxOwed(0, 150000, 0, 2020)).toEqual([51400, [
+      {amount: 500, region: 1, rate: 0, type: "interest"},
+      {amount: 5000, region: 1, rate: 0, type: "interest"},
+      {amount: 32000, region: 1, rate: 0.2, type: "interest"},
+      {amount: 112500, region: 2, rate: 0.4, type: "interest"},
+    ]]);
+  });
+
+  test("All interest, additional rate", () => {
+    expect(calculateIncomeTaxOwed(0, 150001, 0, 2020)).toEqual([51500.45, [
+      {amount: 5000, region: 1, rate: 0, type: "interest"},
+      {amount: 32500, region: 1, rate: 0.2, type: "interest"},
+      {amount: 112500, region: 2, rate: 0.4, type: "interest"},
+      {amount: 1, region: 3, rate: 0.45, type: "interest"},
+    ]]);
+    expect(calculateIncomeTaxOwed(0, 200000, 0, 2020)).toEqual([74000, [
+      {amount: 5000, region: 1, rate: 0, type: "interest"},
+      {amount: 32500, region: 1, rate: 0.2, type: "interest"},
+      {amount: 112500, region: 2, rate: 0.4, type: "interest"},
+      {amount: 50000, region: 3, rate: 0.45, type: "interest"},
+    ]]);
+  });
+
+  test("All dividend, below threshold", () => {
+    expect(calculateIncomeTaxOwed(0, 0, 12500, 2020)).toEqual([0, [
+      {amount: 12500, region: 0, rate: 0, type: "dividend"},
+    ]]);
+    expect(calculateIncomeTaxOwed(0, 0, 12501, 2020)).toEqual([0, [
+      {amount: 12500, region: 0, rate: 0, type: "dividend"},
+      {amount: 1, region: 1, rate: 0, type: "dividend"},
+    ]]);
+    expect(calculateIncomeTaxOwed(0, 0, 14500, 2020)).toEqual([0, [
+      {amount: 12500, region: 0, rate: 0, type: "dividend"},
+      {amount: 2000, region: 1, rate: 0, type: "dividend"},
+    ]]);
+  });
+
+  test("All dividend, basic rate", () => {
+    expect(calculateIncomeTaxOwed(0, 0, 14501, 2020)).toEqual([0.08, [
+      {amount: 12500, region: 0, rate: 0, type: "dividend"},
+      {amount: 2000, region: 1, rate: 0, type: "dividend"},
+      {amount: 1, region: 1, rate: 0.075, type: "dividend"},
+    ]]);
+    expect(calculateIncomeTaxOwed(0, 0, 50000, 2020)).toEqual([2662.5, [
+      {amount: 12500, region: 0, rate: 0, type: "dividend"},
+      {amount: 2000, region: 1, rate: 0, type: "dividend"},
+      {amount: 35500, region: 1, rate: 0.075, type: "dividend"},
+    ]]);
+  });
+
+  test("All dividend, higher rate", () => {
+    expect(calculateIncomeTaxOwed(0, 0, 50001, 2020)).toEqual([2662.83, [
+      {amount: 12500, region: 0, rate: 0, type: "dividend"},
+      {amount: 2000, region: 1, rate: 0, type: "dividend"},
+      {amount: 35500, region: 1, rate: 0.075, type: "dividend"},
+      {amount: 1, region: 2, rate: 0.325, type: "dividend"},
+    ]]);
+    expect(calculateIncomeTaxOwed(0, 0, 100000, 2020)).toEqual([18912.5, [
+      {amount: 12500, region: 0, rate: 0, type: "dividend"},
+      {amount: 2000, region: 1, rate: 0, type: "dividend"},
+      {amount: 35500, region: 1, rate: 0.075, type: "dividend"},
+      {amount: 50000, region: 2, rate: 0.325, type: "dividend"},
+    ]]);
+  });
+
+  test("All dividend, tapered higher rate", () => {
+    expect(calculateIncomeTaxOwed(0, 0, 100001, 2020)).toEqual([18912.99, [
+      {amount: 12499.5, region: 0, rate: 0, type: "dividend"},
+      {amount: 2000, region: 1, rate: 0, type: "dividend"},
+      {amount: 35500, region: 1, rate: 0.075, type: "dividend"},
+      {amount: 50001.5, region: 2, rate: 0.325, type: "dividend"},
+    ]]);
+    expect(calculateIncomeTaxOwed(0, 0, 115000, 2020)).toEqual([26225, [
+      {amount: 5000, region: 0, rate: 0, type: "dividend"},
+      {amount: 2000, region: 1, rate: 0, type: "dividend"},
+      {amount: 35500, region: 1, rate: 0.075, type: "dividend"},
+      {amount: 72500, region: 2, rate: 0.325, type: "dividend"},
+    ]]);
+    expect(calculateIncomeTaxOwed(0, 0, 125000, 2020)).toEqual([31100, [
+      {amount: 2000, region: 1, rate: 0, type: "dividend"},
+      {amount: 35500, region: 1, rate: 0.075, type: "dividend"},
+      {amount: 87500, region: 2, rate: 0.325, type: "dividend"},
+    ]]);
+    expect(calculateIncomeTaxOwed(0, 0, 150000, 2020)).toEqual([39225, [
+      {amount: 2000, region: 1, rate: 0, type: "dividend"},
+      {amount: 35500, region: 1, rate: 0.075, type: "dividend"},
+      {amount: 112500, region: 2, rate: 0.325, type: "dividend"},
+    ]]);
+  });
+
+  test("All dividend, additional rate", () => {
+    expect(calculateIncomeTaxOwed(0, 0, 150001, 2020)).toEqual([39225.38, [
+      {amount: 2000, region: 1, rate: 0, type: "dividend"},
+      {amount: 35500, region: 1, rate: 0.075, type: "dividend"},
+      {amount: 112500, region: 2, rate: 0.325, type: "dividend"},
+      {amount: 1, region: 3, rate: 0.381, type: "dividend"},
+    ]]);
+    expect(calculateIncomeTaxOwed(0, 0, 200000, 2020)).toEqual([58275, [
+      {amount: 2000, region: 1, rate: 0, type: "dividend"},
+      {amount: 35500, region: 1, rate: 0.075, type: "dividend"},
+      {amount: 112500, region: 2, rate: 0.325, type: "dividend"},
+      {amount: 50000, region: 3, rate: 0.381, type: "dividend"},
+    ]]);
+  });
+
+  test("Salary and interest", () => {
+    expect(calculateIncomeTaxOwed(5000, 5000, 0, 2020)).toEqual([0, [
+      {amount: 5000, region: 0, rate: 0, type: "salary"},
+      {amount: 5000, region: 0, rate: 0, type: "interest"},
+    ]]);
+    expect(calculateIncomeTaxOwed(10000, 10000, 0, 2020)).toEqual([300, [
+      {amount: 10000, region: 0, rate: 0, type: "salary"},
+      {amount: 2500, region: 0, rate: 0, type: "interest"},
+      {amount: 1000, region: 1, rate: 0, type: "interest"},
+      {amount: 5000, region: 1, rate: 0, type: "interest"},
+      {amount: 1500, region: 1, rate: 0.2, type: "interest"},
+    ]]);
+    expect(calculateIncomeTaxOwed(15000, 15000, 0, 2020)).toEqual([2800, [
+      {amount: 12500, region: 0, rate: 0, type: "salary"},
+      {amount: 2500, region: 1, rate: 0.2, type: "salary"},
+      {amount: 1000, region: 1, rate: 0, type: "interest"},
+      {amount: 2500, region: 1, rate: 0, type: "interest"},
+      {amount: 11500, region: 1, rate: 0.2, type: "interest"},
+    ]]);
+    expect(calculateIncomeTaxOwed(20000, 20000, 0, 2020)).toEqual([5300, [
+      {amount: 12500, region: 0, rate: 0, type: "salary"},
+      {amount: 7500, region: 1, rate: 0.2, type: "salary"},
+      {amount: 1000, region: 1, rate: 0, type: "interest"},
+      {amount: 19000, region: 1, rate: 0.2, type: "interest"},
+    ]]);
+    expect(calculateIncomeTaxOwed(50000, 50000, 0, 2022)).toEqual([27286, [
+      {amount: 12570, region: 0, rate: 0, type: "salary"},
+      {amount: 37430, region: 1, rate: 0.2, type: "salary"},
+      {amount: 270, region: 1, rate: 0, type: "interest"},
+      {amount: 230, region: 2, rate: 0, type: "interest"},
+      {amount: 49500, region: 2, rate: 0.4, type: "interest"},
+    ]]);
+  });
+
+  test("Salary and dividend", () => {
+    expect(calculateIncomeTaxOwed(5000, 0, 5000, 2020)).toEqual([0, [
+      {amount: 5000, region: 0, rate: 0, type: "salary"},
+      {amount: 5000, region: 0, rate: 0, type: "dividend"},
+    ]]);
+    expect(calculateIncomeTaxOwed(10000, 0, 10000, 2020)).toEqual([412.5, [
+      {amount: 10000, region: 0, rate: 0, type: "salary"},
+      {amount: 2500, region: 0, rate: 0, type: "dividend"},
+      {amount: 2000, region: 1, rate: 0, type: "dividend"},
+      {amount: 5500, region: 1, rate: 0.075, type: "dividend"},
+    ]]);
+    expect(calculateIncomeTaxOwed(15000, 0, 15000, 2020)).toEqual([1475, [
+      {amount: 12500, region: 0, rate: 0, type: "salary"},
+      {amount: 2500, region: 1, rate: 0.2, type: "salary"},
+      {amount: 2000, region: 1, rate: 0, type: "dividend"},
+      {amount: 13000, region: 1, rate: 0.075, type: "dividend"},
+    ]]);
+    expect(calculateIncomeTaxOwed(50000, 0, 50000, 2022)).toEqual([23686, [
+      {amount: 12570, region: 0, rate: 0, type: "salary"},
+      {amount: 37430, region: 1, rate: 0.2, type: "salary"},
+      {amount: 270, region: 1, rate: 0, type: "dividend"},
+      {amount: 1730, region: 2, rate: 0, type: "dividend"},
+      {amount: 48000, region: 2, rate: 0.3375, type: "dividend"},
+    ]]);
+    expect(calculateIncomeTaxOwed(14600, 0, 58733.22, 2021)).toEqual([10426.8, [
+      {amount: 12570, region: 0, rate: 0, type: "salary"},
+      {amount: 2030, region: 1, rate: 0.2, type: "salary"},
+      {amount: 2000, region: 1, rate: 0, type: "dividend"},
+      {amount: 33670, region: 1, rate: 0.075, type: "dividend"},
+      {amount: 23063.22, region: 2, rate: 0.325, type: "dividend"},
+    ]]);
+    expect(calculateIncomeTaxOwed(60000, 0, 60000, 2020)).toEqual([34350, [
+      {amount: 2500, region: 0, rate: 0, type: "salary"},
+      {amount: 37500, region: 1, rate: 0.2, type: "salary"},
+      {amount: 20000, region: 2, rate: 0.4, type: "salary"},
+      {amount: 2000, region: 2, rate: 0, type: "dividend"},
+      {amount: 58000, region: 2, rate: 0.325, type: "dividend"},
+    ]]);
+  });
+
+  test("Interest and dividend", () => {
+    expect(calculateIncomeTaxOwed(0, 5000, 5000, 2020)).toEqual([0, [
+      {amount: 5000, region: 0, rate: 0, type: "interest"},
+      {amount: 5000, region: 0, rate: 0, type: "dividend"},
+    ]]);
+    expect(calculateIncomeTaxOwed(0, 10000, 10000, 2020)).toEqual([412.5, [
+      {amount: 10000, region: 0, rate: 0, type: "interest"},
+      {amount: 2500, region: 0, rate: 0, type: "dividend"},
+      {amount: 2000, region: 1, rate: 0, type: "dividend"},
+      {amount: 5500, region: 1, rate: 0.075, type: "dividend"},
+    ]]);
+    expect(calculateIncomeTaxOwed(0, 15000, 15000, 2020)).toEqual([975, [
+      {amount: 12500, region: 0, rate: 0, type: "interest"},
+      {amount: 1000, region: 1, rate: 0, type: "interest"},
+      {amount: 1500, region: 1, rate: 0, type: "interest"},
+      {amount: 2000, region: 1, rate: 0, type: "dividend"},
+      {amount: 13000, region: 1, rate: 0.075, type: "dividend"},
+    ]]);
+    expect(calculateIncomeTaxOwed(0, 50000, 50000, 2022)).toEqual([23586, [
+      {amount: 12570, region: 0, rate: 0, type: "interest"},
+      {amount: 500, region: 1, rate: 0, type: "interest"},
+      {amount: 36930, region: 1, rate: 0.2, type: "interest"},
+      {amount: 270, region: 1, rate: 0, type: "dividend"},
+      {amount: 1730, region: 2, rate: 0, type: "dividend"},
+      {amount: 48000, region: 2, rate: 0.3375, type: "dividend"},
+    ]]);
+
+  });
+
+  test("Salary, interest and dividend", () => {
+    expect(calculateIncomeTaxOwed(108850, 251.96, 25132.36, 2022)).toEqual([43807.17, [
+      {amount: 37700, region: 1, rate: 0.2, type: "salary"},
+      {amount: 71150, region: 2, rate: 0.4, type: "salary"},
+      {amount: 251.96, region: 2, rate: 0, type: "interest"},
+      {amount: 2000, region: 2, rate: 0, type: "dividend"},
+      {amount: 23132.36, region: 2, rate: 0.3375, type: "dividend"},
+    ]]);
+    expect(calculateIncomeTaxOwed(40000, 40000, 40000, 2020)).toEqual([35650, [
+      {amount: 2500, region: 0, rate: 0, type: "salary"},
+      {amount: 37500, region: 1, rate: 0.2, type: "salary"},
+      {amount: 500, region: 2, rate: 0, type: "interest"},
+      {amount: 39500, region: 2, rate: 0.4, type: "interest"},
+      {amount: 2000, region: 2, rate: 0, type: "dividend"},
+      {amount: 38000, region: 2, rate: 0.325, type: "dividend"},
+    ]]);
+  });
+
+});
+
+
+describe("calculateStudentLoanOwed", () => {
+
+  test("Below threshold", () => {
+    expect(calculateStudentLoanOwed(0, 2021)).toBe(0);
+    expect(calculateStudentLoanOwed(19895, 2021)).toBe(0);
+    expect(calculateStudentLoanOwed(20195, 2022)).toBe(0);
+  });
+
+  test("Above threshold", () => {
+    expect(calculateStudentLoanOwed(19896, 2021)).toBe(0.09);
+    expect(calculateStudentLoanOwed(20196, 2022)).toBe(0.09);
+    expect(calculateStudentLoanOwed(73333.22, 2021)).toBe(4809.44);
+    expect(calculateStudentLoanOwed(134234.32, 2022)).toBe(10263.54);
+  });
+
+});

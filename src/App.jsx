@@ -9,7 +9,7 @@ import { dateToTaxYear } from "./utils";
 const App = () => {
 
   const [mode, setMode] = useState("Personal");
-  const [useFuture, setUseFuture] = useState(false);
+  const [useFuture, setUseFuture] = useState(true);
 
   const allTransactions = data.flatMap(c => c.transactions);
 

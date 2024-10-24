@@ -1,7 +1,7 @@
 import React from "react";
 import PropTypes from "prop-types";
 import { data, taxReturns, hmrcPayments } from "../data";
-import { calculateDividendIncomeTaxOwed, calculateSalaryIncomeTaxOwed, calculateStudentLoanOwed, formatCurrency, formatDate, getComponents } from "../utils";
+import { calculateIncomeTaxOwed, calculateStudentLoanOwed, formatCurrency, formatDate, getComponents } from "../utils";
 
 const TaxReturn = props => {
 
@@ -15,13 +15,11 @@ const TaxReturn = props => {
   const payeIT = salaryComponents.reduce((acc, c) => acc + c.incomeTax, 0);
   const payeSL = salaryComponents.reduce((acc, c) => acc + c.studentLoan, 0);
 
-  const totalDividendIncome = dividendComponents.reduce((acc, c) => acc + c.amount, 0);
   const totalInterestIncome = interestComponents.reduce((acc, c) => acc + c.amount, 0);
+  const totalDividendIncome = dividendComponents.reduce((acc, c) => acc + c.amount, 0);
   const totalIncome = totalSalaryIncome + totalDividendIncome + totalInterestIncome;
   
-  const salaryIncomeTaxOwed = calculateSalaryIncomeTaxOwed(totalIncome, totalSalaryIncome, taxYear);
-  const dividendIncomeTaxOwed = calculateDividendIncomeTaxOwed(totalIncome, totalDividendIncome, taxYear);
-  const incomeTaxOwed = salaryIncomeTaxOwed + dividendIncomeTaxOwed;
+  const [incomeTaxOwed] = calculateIncomeTaxOwed(totalSalaryIncome, totalInterestIncome, totalDividendIncome, taxYear);
   const incomeTaxHmrc = incomeTaxOwed - payeIT;
 
   const studentLoanOwed = calculateStudentLoanOwed(totalIncome, taxYear);

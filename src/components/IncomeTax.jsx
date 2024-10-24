@@ -2,7 +2,7 @@ import React from "react";
 import PropTypes from "prop-types";
 import { data } from "../data";
 import { formatCurrency } from "../utils";
-import { calculateSalaryIncomeTaxOwed, calculateDividendIncomeTaxOwed, getComponents } from "../utils";
+import { calculateIncomeTaxOwed, getComponents } from "../utils";
 
 const IncomeTax = props => {
 
@@ -19,11 +19,14 @@ const IncomeTax = props => {
   const dividendComponents = getComponents(data, "dividend", null, taxYear, useFuture);
   const totalDividendIncome = dividendComponents.reduce((acc, c) => acc + c.amount, 0);
 
-  const totalIncome = totalSalaryIncome + totalDividendIncome;
-  const salaryIncomeTaxOwed = calculateSalaryIncomeTaxOwed(totalIncome, totalSalaryIncome, taxYear);
-  const dividendIncomeTaxOwed = calculateDividendIncomeTaxOwed(totalIncome, totalDividendIncome, taxYear);
+  const interestComponents = getComponents(data, "interest", null, taxYear, useFuture);
+  const totalInterestIncome = interestComponents.reduce((acc, c) => acc + c.amount, 0);
+
+  const [incomeTaxOwed, incomeTaxByBand] = calculateIncomeTaxOwed(totalSalaryIncome, totalInterestIncome, totalDividendIncome, taxYear);
+  const salaryIncomeTaxOwed = incomeTaxByBand.filter(b => b.type === "salary").reduce((acc, b) => acc + (b.amount * b.rate), 0);
+  const interestIncomeTaxOwed = incomeTaxByBand.filter(b => b.type === "interest").reduce((acc, b) => acc + (b.amount * b.rate), 0);
+  const dividendIncomeTaxOwed = incomeTaxByBand.filter(b => b.type === "dividend").reduce((acc, b) => acc + (b.amount * b.rate), 0);
   
-  const incomeTaxOwed = salaryIncomeTaxOwed + dividendIncomeTaxOwed;
   const hmrcBill = incomeTaxOwed - paye;
 
   const indentClass = "text-sm pl-4";
@@ -51,6 +54,7 @@ const IncomeTax = props => {
             <span className="text-xs font-bold text-gray-600">Total owed: </span>{formatCurrency(incomeTaxOwed)}
           </div>
           <div className={indentClass}>Salary: {formatCurrency(salaryIncomeTaxOwed)}</div>
+          <div className={indentClass}>Interest: {formatCurrency(interestIncomeTaxOwed)}</div>
           <div className={indentClass}>Dividend: {formatCurrency(dividendIncomeTaxOwed)}</div>
         </div>
         <div className="font-medium">
