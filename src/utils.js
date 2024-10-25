@@ -292,679 +292,72 @@ export const calculateIncomeTaxOwed = (salaryIncome, interestIncome, dividendInc
    * the income tax owed by band.
    */
   
-  // What is the total income?
   const totalIncome = salaryIncome + interestIncome + dividendIncome;
-
-  // What is the personal allowance?
   const personalAllowance = calculatePersonalAllowance(
-    totalIncome,
-    incomeTax[taxYear].personalAllowance,
-    taxYear
+    totalIncome, incomeTax[taxYear].personalAllowance, taxYear
   );
-
-  // What is the higher rate threshold?
-  const higherBand = incomeTax[taxYear].higherBand;
-
-  // Start tranches
-  const tranches = [];
-  let cumulative = 0;
-  let remainingPersonalAllowance = personalAllowance;
-  let remainingSalaryIncome = salaryIncome;
-  let remainingInterestIncome = interestIncome;
-  let remainingDividendIncome = dividendIncome;
-  let region = 0;
-
-  // Salary personal allowance
-  const salaryPersonalAllowance = Math.max(Math.min(remainingSalaryIncome, remainingPersonalAllowance), 0);
-  if (salaryPersonalAllowance) {
-    tranches.push({
-      type: "salary",
-      rate: 0,
-      region: 0,
-      amount: salaryPersonalAllowance,
-    });
-    cumulative += salaryPersonalAllowance;
-    remainingSalaryIncome -= salaryPersonalAllowance;
-    remainingPersonalAllowance -= salaryPersonalAllowance;
-  }
-
-  // Salary basic rate
-  const salaryBasicRate = Math.max(Math.min(remainingSalaryIncome, higherBand), 0);
-  if (salaryBasicRate) {
-    tranches.push({
-      type: "salary",
-      rate: salaryIncomeTax[taxYear].basic,
-      region: 1,
-      amount: salaryBasicRate,
-    });
-    cumulative += salaryBasicRate;
-    remainingSalaryIncome -= salaryBasicRate;
-    region = 1;
-  }
-
-  // Salary higher rate
-  const salaryHigherRate = Math.max(Math.min(remainingSalaryIncome, incomeTax[taxYear].additionalBand - higherBand), 0);
-  if (salaryHigherRate) {
-    tranches.push({
-      type: "salary",
-      rate: salaryIncomeTax[taxYear].higher,
-      region: 2,
-      amount: salaryHigherRate,
-    });
-    cumulative += salaryHigherRate;
-    remainingSalaryIncome -= salaryHigherRate;
-    region = 2;
-  }
-
-  // Salary additional rate
-  const salaryAdditionalRate = Math.max(remainingSalaryIncome, 0);
-  if (salaryAdditionalRate) {
-    tranches.push({
-      type: "salary",
-      rate: salaryIncomeTax[taxYear].additional,
-      region: 3,
-      amount: salaryAdditionalRate,
-    });
-    cumulative += salaryAdditionalRate;
-    remainingSalaryIncome -= salaryAdditionalRate;
-    region = 3;
-  }
-
-  // What is the savings allowance?
   let savingsAllowance = 0;
   if (totalIncome <= (personalAllowance + incomeTax[taxYear].higherBand)) {
     savingsAllowance = 1000;
   } else if (totalIncome <= incomeTax[taxYear].additionalBand) {
     savingsAllowance = 500;
   }
-
-  // What is the starting rate threshold for savings?
   const nonInterestIncome = salaryIncome + dividendIncome;
   let startingRateThreshold = 0;
   if (nonInterestIncome <= personalAllowance + 5000) {
     startingRateThreshold = 5000 - Math.max((nonInterestIncome - personalAllowance), 0);
   }
-
-  // Add the personal allowance
-  let nextThreshold = {
+  const nextThresholds = {
     0: personalAllowance,
-    1: higherBand + personalAllowance,
+    1: incomeTax[taxYear].higherBand + personalAllowance,
     2: incomeTax[taxYear].additionalBand,
     3: Infinity,
-  }[region];
-  const savingsPersonalAllowanceAmount = Math.max(Math.min(remainingPersonalAllowance, remainingInterestIncome), 0);
-  if (savingsPersonalAllowanceAmount) {
-    if (savingsPersonalAllowanceAmount + cumulative >= nextThreshold) {
-      tranches.push({
-        type: "interest",
-        rate: 0,
-        region: region,
-        amount: nextThreshold - cumulative,
-      });
-      region += 1;
-      if (savingsPersonalAllowanceAmount - (nextThreshold - cumulative) > 0) {
-        tranches.push({
-          type: "interest",
-          rate: 0,
-          region: region,
-          amount: savingsPersonalAllowanceAmount - (nextThreshold - cumulative),
-        });
-      }
-    } else {
-      tranches.push({
-        type: "interest",
-        rate: 0,
-        region: region,
-        amount: savingsPersonalAllowanceAmount,
-      });
+  };
+  const tranches = [];
+  let cumulative = 0;
+  let remainingPersonalAllowance = personalAllowance;
+  let region = 0;
+  for (let i = 0; i < 3; i++) {
+    let remainingIncome = [salaryIncome, interestIncome, dividendIncome][i];
+    const type = ["salary", "interest", "dividend"][i];
+    const incomeTaxData = i === 2 ? dividendIncomeTax : salaryIncomeTax;
+    const personalAllowanceAmount = Math.max(Math.min(remainingPersonalAllowance, remainingIncome), 0);
+    if (personalAllowanceAmount) {
+      tranches.push({type, rate: 0, region, amount: personalAllowanceAmount});
+      cumulative += personalAllowanceAmount;
+      remainingIncome -= personalAllowanceAmount;
+      remainingPersonalAllowance -= personalAllowanceAmount;
     }
-    cumulative += savingsPersonalAllowanceAmount;
-    remainingInterestIncome -= savingsPersonalAllowanceAmount;
-    remainingPersonalAllowance -= savingsPersonalAllowanceAmount;
-  }
-  
-  // Add the savings allowance
-  nextThreshold = {
-    0: personalAllowance,
-    1: higherBand + personalAllowance,
-    2: incomeTax[taxYear].additionalBand,
-    3: Infinity,
-  }[region];
-  const savingsAllowanceAmount = Math.max(Math.min(savingsAllowance, remainingInterestIncome), 0);
-  if (savingsAllowanceAmount) {
-    if (savingsAllowanceAmount + cumulative >= nextThreshold) {
-      if (nextThreshold - cumulative > 0) {
-        tranches.push({
-          type: "interest",
-          rate: 0,
-          region: region,
-          amount: nextThreshold - cumulative,
-        });
-      }
-      region += 1;
-      if (savingsAllowanceAmount - (nextThreshold - cumulative) > 0) {
-        tranches.push({
-          type: "interest",
-          rate: 0,
-          region: region,
-          amount: savingsAllowanceAmount - (nextThreshold - cumulative),
-        });
-      }
-    } else {
-      tranches.push({
-        type: "interest",
-        rate: 0,
-        region: region,
-        amount: savingsAllowanceAmount,
-      });
-    }
-    cumulative += savingsAllowanceAmount;
-    remainingInterestIncome -= savingsAllowanceAmount;
-  }
-
-  // Add the starting rate threshold
-  nextThreshold = {
-    0: personalAllowance,
-    1: higherBand + personalAllowance,
-    2: incomeTax[taxYear].additionalBand,
-    3: Infinity,
-  }[region];
-  const startingRateThresholdAmount = Math.max(Math.min(startingRateThreshold, remainingInterestIncome), 0);
-  if (startingRateThresholdAmount) {
-    if (startingRateThresholdAmount + cumulative >= nextThreshold) {
-      if (nextThreshold - cumulative > 0) {
-        tranches.push({
-          type: "interest",
-          rate: 0,
-          region: region,
-          amount: nextThreshold - cumulative,
-        });
-      }
-      region += 1;
-      if (startingRateThresholdAmount - (nextThreshold - cumulative) > 0) {
-        tranches.push({
-          type: "interest",
-          rate: 0,
-          region: region,
-          amount: startingRateThresholdAmount - (nextThreshold - cumulative),
-        });
-      }
-    } else {
-      tranches.push({
-        type: "interest",
-        rate: 0,
-        region: region,
-        amount: startingRateThresholdAmount,
-      });
-    }
-    cumulative += startingRateThresholdAmount;
-    remainingInterestIncome -= startingRateThresholdAmount;
-  }
-
-  // Add the basic rate interest
-  nextThreshold = {
-    0: personalAllowance,
-    1: higherBand + personalAllowance,
-    2: incomeTax[taxYear].additionalBand,
-    3: Infinity,
-  }[region];
-  if (remainingInterestIncome) {
-    const basicRateInterest = Math.max(Math.min(remainingInterestIncome, higherBand + personalAllowance - cumulative), 0);
-
-    if (basicRateInterest) {
-      if (basicRateInterest + cumulative >= nextThreshold) {
-        tranches.push({
-          type: "interest",
-          rate: salaryIncomeTax[taxYear].basic,
-          region: region,
-          amount: nextThreshold - cumulative,
-        });
-        region += 1;
-        if (basicRateInterest - (nextThreshold - cumulative) > 0) {
-          tranches.push({
-            type: "interest",
-            rate: salaryIncomeTax[taxYear].higher,
-            region: region,
-            amount: basicRateInterest - (nextThreshold - cumulative),
-          });
+    if (cumulative >= personalAllowance && region === 0) region += 1;
+    const data = [
+      [incomeTax[taxYear].higherBand + personalAllowance, incomeTaxData[taxYear].basic],
+      [incomeTax[taxYear].additionalBand, incomeTaxData[taxYear].higher],
+      [null, incomeTaxData[taxYear].additional],
+    ]
+    if (i === 1 && startingRateThreshold) data.unshift([null, 0, startingRateThreshold]);
+    if (i === 1 && savingsAllowance) data.unshift([null, 0, savingsAllowance]);
+    if (i === 2) data.unshift([null, 0, dividendAllowance[taxYear]]);
+    for (const [cap, rate, allowance] of data) {
+      const amountToPourIn = allowance ? (
+        Math.min(remainingIncome, allowance)
+      ) : cap ? Math.max(Math.min(remainingIncome, cap - cumulative), 0) : remainingIncome;
+      if (amountToPourIn) {
+        if (amountToPourIn + cumulative >= nextThresholds[region]) {
+          tranches.push({type, rate, region, amount: nextThresholds[region] - cumulative});
+          region += 1;
+          if (amountToPourIn - (nextThresholds[region - 1] - cumulative) > 0) {
+            tranches.push({type, rate, region, amount: amountToPourIn - (nextThresholds[region - 1] - cumulative)});
+          }
+        } else {
+          tranches.push({type, rate, region, amount: amountToPourIn});
         }
-      } else {
-        tranches.push({
-          type: "interest",
-          rate: salaryIncomeTax[taxYear].basic,
-          region: region,
-          amount: basicRateInterest,
-        });
+        cumulative += amountToPourIn;
+        remainingIncome -= amountToPourIn;
       }
-      cumulative += basicRateInterest;
-      remainingInterestIncome -= basicRateInterest;
     }
   }
-
-  // Add the higher rate interest
-  nextThreshold = {
-    0: personalAllowance,
-    1: higherBand + personalAllowance,
-    2: incomeTax[taxYear].additionalBand,
-    3: Infinity,
-  }[region];
-  if (remainingInterestIncome) {
-    const higherRateInterest = Math.max(Math.min(remainingInterestIncome, incomeTax[taxYear].additionalBand - cumulative), 0);
-    if (higherRateInterest) {
-      if (higherRateInterest + cumulative >= nextThreshold) {
-        tranches.push({
-          type: "interest",
-          rate: salaryIncomeTax[taxYear].higher,
-          region: region,
-          amount: nextThreshold - cumulative,
-        });
-        region += 1;
-        if (higherRateInterest - (nextThreshold - cumulative) > 0) {
-          tranches.push({
-            type: "interest",
-            rate: salaryIncomeTax[taxYear].additional,
-            region: region,
-            amount: higherRateInterest - (nextThreshold - cumulative),
-          });
-        }
-      } else {
-        tranches.push({
-          type: "interest",
-          rate: salaryIncomeTax[taxYear].higher,
-          region: region,
-          amount: higherRateInterest,
-        });
-      }
-      cumulative += higherRateInterest;
-      remainingInterestIncome -= higherRateInterest;
-    }
-  }
-
-  // Add the additional rate interest
-  nextThreshold = {
-    0: personalAllowance,
-    1: higherBand + personalAllowance,
-    2: incomeTax[taxYear].additionalBand,
-    3: Infinity,
-  }[region];
-  if (remainingInterestIncome) {
-    const additionalRateInterest = Math.max(remainingInterestIncome, 0);
-    if (additionalRateInterest) {
-      tranches.push({
-        type: "interest",
-        rate: salaryIncomeTax[taxYear].additional,
-        region: region,
-        amount: additionalRateInterest,
-      });
-      cumulative += additionalRateInterest;
-      remainingInterestIncome -= additionalRateInterest;
-    }
-  }
-
-  // Add the dividend personal allowance
-  nextThreshold = {
-    0: personalAllowance,
-    1: higherBand + personalAllowance,
-    2: incomeTax[taxYear].additionalBand,
-    3: Infinity,
-  }[region];
-  const dividendPersonalAllowanceAmount = Math.max(Math.min(remainingPersonalAllowance, remainingDividendIncome), 0);
-  if (dividendPersonalAllowanceAmount) {
-    if (dividendPersonalAllowanceAmount + cumulative >= nextThreshold) {
-      tranches.push({
-        type: "dividend",
-        rate: 0,
-        region: region,
-        amount: nextThreshold - cumulative,
-      });
-      region += 1;
-      if (dividendPersonalAllowanceAmount - (nextThreshold - cumulative) > 0) {
-        tranches.push({
-          type: "dividend",
-          rate: 0,
-          region: region,
-          amount: dividendPersonalAllowanceAmount - (nextThreshold - cumulative),
-        });
-      }
-    } else {
-      tranches.push({
-        type: "dividend",
-        rate: 0,
-        region: region,
-        amount: dividendPersonalAllowanceAmount,
-      });
-    }
-    cumulative += dividendPersonalAllowanceAmount;
-    remainingDividendIncome -= dividendPersonalAllowanceAmount;
-    remainingPersonalAllowance -= dividendPersonalAllowanceAmount;
-  }
-
-  // Add the dividend allowance
-  nextThreshold = {
-    0: personalAllowance,
-    1: higherBand + personalAllowance,
-    2: incomeTax[taxYear].additionalBand,
-    3: Infinity,
-  }[region];
-  const dividendAllowanceAmount = Math.max(Math.min(dividendAllowance[taxYear], remainingDividendIncome), 0);
-  if (dividendAllowanceAmount) {
-    if (dividendAllowanceAmount + cumulative >= nextThreshold) {
-      if (nextThreshold - cumulative > 0) {
-        tranches.push({
-          type: "dividend",
-          rate: 0,
-          region: region,
-          amount: nextThreshold - cumulative,
-        });
-      }
-      region += 1;
-      if (dividendAllowanceAmount - (nextThreshold - cumulative) > 0) {
-        tranches.push({
-          type: "dividend",
-          rate: 0,
-          region: region,
-          amount: dividendAllowanceAmount - (nextThreshold - cumulative),
-        });
-      }
-    } else {
-      tranches.push({
-        type: "dividend",
-        rate: 0,
-        region: region,
-        amount: dividendAllowanceAmount,
-      });
-    }
-    cumulative += dividendAllowanceAmount;
-    remainingDividendIncome -= dividendAllowanceAmount;
-  }
-
-  // Add the dividend basic rate
-  nextThreshold = {
-    0: personalAllowance,
-    1: higherBand + personalAllowance,
-    2: incomeTax[taxYear].additionalBand,
-    3: Infinity,
-  }[region];
-  if (remainingDividendIncome) {
-    const dividendBasicRate = Math.max(Math.min(remainingDividendIncome, higherBand + personalAllowance - cumulative), 0);
-    if (dividendBasicRate) {
-      if (dividendBasicRate + cumulative >= nextThreshold) {
-        if (nextThreshold - cumulative > 0) {
-          tranches.push({
-            type: "dividend",
-            rate: dividendIncomeTax[taxYear].basic,
-            region: region,
-            amount: nextThreshold - cumulative,
-          });
-        }
-        region += 1;
-        if (dividendBasicRate - (nextThreshold - cumulative) > 0) {
-          tranches.push({
-            type: "dividend",
-            rate: dividendIncomeTax[taxYear].higher,
-            region: region,
-            amount: dividendBasicRate - (nextThreshold - cumulative),
-          });
-        }
-      } else {
-        tranches.push({
-          type: "dividend",
-          rate: dividendIncomeTax[taxYear].basic,
-          region: region,
-          amount: dividendBasicRate,
-        });
-      }
-      cumulative += dividendBasicRate;
-      remainingDividendIncome -= dividendBasicRate;
-    }
-  }
-
-  // Add the dividend higher rate
-  nextThreshold = {
-    0: personalAllowance,
-    1: higherBand + personalAllowance,
-    2: incomeTax[taxYear].additionalBand,
-    3: Infinity,
-  }[region];
-  if (remainingDividendIncome) {
-    const dividendHigherRate = Math.max(Math.min(remainingDividendIncome, incomeTax[taxYear].additionalBand - cumulative), 0);
-    if (dividendHigherRate) {
-      if (dividendHigherRate + cumulative >= nextThreshold) {
-        tranches.push({
-          type: "dividend",
-          rate: dividendIncomeTax[taxYear].higher,
-          region: region,
-          amount: nextThreshold - cumulative,
-        });
-        region += 1;
-        if (dividendHigherRate - (nextThreshold - cumulative) > 0) {
-          tranches.push({
-            type: "dividend",
-            rate: dividendIncomeTax[taxYear].additional,
-            region: region,
-            amount: dividendHigherRate - (nextThreshold - cumulative),
-          });
-        }
-      } else {
-        tranches.push({
-          type: "dividend",
-          rate: dividendIncomeTax[taxYear].higher,
-          region: region,
-          amount: dividendHigherRate,
-        });
-      }
-      cumulative += dividendHigherRate;
-      remainingDividendIncome -= dividendHigherRate;
-    }
-  }
-
-  // Add the dividend additional rate
-  nextThreshold = {
-    0: personalAllowance,
-    1: higherBand + personalAllowance,
-    2: incomeTax[taxYear].additionalBand,
-    3: Infinity,
-  }[region];
-  if (remainingDividendIncome) {
-    const dividendAdditionalRate = Math.max(remainingDividendIncome, 0);
-    if (dividendAdditionalRate) {
-      tranches.push({
-        type: "dividend",
-        rate: dividendIncomeTax[taxYear].additional,
-        region: region,
-        amount: dividendAdditionalRate,
-      });
-      cumulative += dividendAdditionalRate;
-      remainingDividendIncome -= dividendAdditionalRate;
-    }
-  }
-
-
-  
-  
-  
-  
-  
-  
-  
-  
-  /* 
-  
-
-  // Add the starting rate threshold
-  
-
-  // Add the basic rate interest
-  if (cumulative < higherBand + personalAllowance) {
-    const basicRateInterest = Math.min(remainingInterestIncome, higherBand + personalAllowance - cumulative);
-    if (basicRateInterest) {
-      if (basicRateInterest + cumulative > higherBand + personalAllowance) {
-        tranches.push({
-          type: "interest",
-          rate: salaryIncomeTax[taxYear].basic,
-          region: region,
-          amount: higherBand + personalAllowance - cumulative,
-        });
-        region += 1;
-        tranches.push({
-          type: "interest",
-          rate: salaryIncomeTax[taxYear].higher,
-          region: region + 1,
-          amount: basicRateInterest - (higherBand + personalAllowance - cumulative),
-        });
-      } else {
-        tranches.push({
-          type: "interest",
-          rate: salaryIncomeTax[taxYear].basic,
-          region: region,
-          amount: basicRateInterest,
-        });
-      }
-      cumulative += basicRateInterest;
-      remainingInterestIncome -= basicRateInterest;
-    }
-  }
-
-  // Add the higher rate interest
-  if (cumulative < incomeTax[taxYear].additionalBand) {
-    const higherRateInterest = Math.min(remainingInterestIncome, incomeTax[taxYear].additionalBand - cumulative);
-    if (higherRateInterest) {
-      if (higherRateInterest + cumulative > incomeTax[taxYear].additionalBand) {
-        tranches.push({
-          type: "interest",
-          rate: salaryIncomeTax[taxYear].higher,
-          region: region,
-          amount: incomeTax[taxYear].additionalBand - cumulative,
-        });
-        region += 1;
-        tranches.push({
-          type: "interest",
-          rate: salaryIncomeTax[taxYear].additional,
-          region: region + 1,
-          amount: higherRateInterest - (incomeTax[taxYear].additionalBand - cumulative),
-        });
-      } else {
-        tranches.push({
-          type: "interest",
-          rate: salaryIncomeTax[taxYear].higher,
-          region: region,
-          amount: higherRateInterest,
-        });
-      }
-      cumulative += higherRateInterest;
-      remainingInterestIncome -= higherRateInterest;
-    }
-  }
-
-  // Add the additional rate interest
-  if (cumulative < Infinity) {
-    const additionalRateInterest = Math.max(remainingInterestIncome, 0);
-    if (additionalRateInterest) {
-      tranches.push({
-        type: "interest",
-        rate: salaryIncomeTax[taxYear].additional,
-        region: region,
-        amount: additionalRateInterest,
-      });
-      cumulative += additionalRateInterest;
-      remainingInterestIncome -= additionalRateInterest;
-    }
-  }
-
-  // Add the dividend personal allowance
-  const dividendPersonalAllowance = Math.min(dividendAllowance[taxYear], remainingDividendIncome);
-  if (dividendPersonalAllowance) {
-    tranches.push({
-      type: "dividend",
-      rate: 0,
-      region: region,
-      amount: dividendPersonalAllowance,
-    });
-    cumulative += dividendPersonalAllowance;
-    remainingDividendIncome -= dividendPersonalAllowance;
-  }
-
-  // Add the dividend basic rate
-  if (cumulative < higherBand + personalAllowance) {
-    const dividendBasicRate = Math.min(remainingDividendIncome, higherBand + personalAllowance - cumulative);
-    if (dividendBasicRate) {
-      if (dividendBasicRate + cumulative > higherBand + personalAllowance) {
-        tranches.push({
-          type: "dividend",
-          rate: dividendIncomeTax[taxYear].basic,
-          region: region,
-          amount: higherBand + personalAllowance - cumulative,
-        });
-        region += 1;
-        tranches.push({
-          type: "dividend",
-          rate: dividendIncomeTax[taxYear].higher,
-          region: region + 1,
-          amount: dividendBasicRate - (higherBand + personalAllowance - cumulative),
-        });
-      } else {
-        tranches.push({
-          type: "dividend",
-          rate: dividendIncomeTax[taxYear].basic,
-          region: region,
-          amount: dividendBasicRate,
-        });
-      }
-      cumulative += dividendBasicRate;
-      remainingDividendIncome -= dividendBasicRate;
-    }
-  }
-
-  // Add the dividend higher rate
-  if (cumulative < incomeTax[taxYear].additionalBand) {
-    const dividendHigherRate = Math.min(remainingDividendIncome, incomeTax[taxYear].additionalBand - cumulative);
-    if (dividendHigherRate) {
-      if (dividendHigherRate + cumulative > incomeTax[taxYear].additionalBand) {
-        tranches.push({
-          type: "dividend",
-          rate: dividendIncomeTax[taxYear].higher,
-          region: region,
-          amount: incomeTax[taxYear].additionalBand - cumulative,
-        });
-        region += 1;
-        tranches.push({
-          type: "dividend",
-          rate: dividendIncomeTax[taxYear].additional,
-          region: region + 1,
-          amount: dividendHigherRate - (incomeTax[taxYear].additionalBand - cumulative),
-        });
-      } else {
-        tranches.push({
-          type: "dividend",
-          rate: dividendIncomeTax[taxYear].higher,
-          region: region,
-          amount: dividendHigherRate,
-        });
-      }
-      cumulative += dividendHigherRate;
-      remainingDividendIncome -= dividendHigherRate;
-    }
-  }
-
-  // Add the dividend additional rate
-  if (cumulative < Infinity) {
-    const dividendAdditionalRate = Math.max(remainingDividendIncome, 0);
-    if (dividendAdditionalRate) {
-      tranches.push({
-        type: "dividend",
-        rate: dividendIncomeTax[taxYear].additional,
-        region: region,
-        amount: dividendAdditionalRate,
-      });
-      cumulative += dividendAdditionalRate;
-      remainingDividendIncome -= dividendAdditionalRate;
-    }
-  } */
-
-  // How much income tax is owed?
-  const owed = Math.round(tranches.reduce((a, b) => a + b.amount * b.rate, 0) * 100) / 100;
-
-  return [owed, tranches];
+  const owed_ = Math.round(tranches.reduce((a, b) => a + b.amount * b.rate, 0) * 100) / 100;
+  return [owed_, tranches];
 }
 
 
