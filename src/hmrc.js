@@ -1,4 +1,5 @@
 export const studentLoan = {
+  2018: {threshold: 18330, rate: 0.09},
   2019: {threshold: 18935, rate: 0.09},
   2020: {threshold: 19390, rate: 0.09},
   2021: {threshold: 19895, rate: 0.09},
@@ -9,6 +10,7 @@ export const studentLoan = {
 }
 
 export const incomeTax = {
+  2018: {personalAllowance: 11850, higherBand: 34500, additionalBand: 150000, personalAllowanceThreshold: 100000},
   2019: {personalAllowance: 12500, higherBand: 37500, additionalBand: 150000, personalAllowanceThreshold: 100000},
   2020: {personalAllowance: 12500, higherBand: 37500, additionalBand: 150000, personalAllowanceThreshold: 100000},
   2021: {personalAllowance: 12570, higherBand: 37700, additionalBand: 150000, personalAllowanceThreshold: 100000},
@@ -19,6 +21,7 @@ export const incomeTax = {
 }
 
 export const salaryIncomeTax = {
+  2018: {basic: 0.2, higher: 0.4, additional: 0.45},
   2019: {basic: 0.2, higher: 0.4, additional: 0.45},
   2020: {basic: 0.2, higher: 0.4, additional: 0.45},
   2021: {basic: 0.2, higher: 0.4, additional: 0.45},
@@ -29,6 +32,7 @@ export const salaryIncomeTax = {
 }
 
 export const dividendIncomeTax = {
+  2018: {basic: 0.075, higher: 0.325, additional: 0.381},
   2019: {basic: 0.075, higher: 0.325, additional: 0.381},
   2020: {basic: 0.075, higher: 0.325, additional: 0.381},
   2021: {basic: 0.075, higher: 0.325, additional: 0.381},
@@ -39,6 +43,7 @@ export const dividendIncomeTax = {
 }
 
 export const dividendAllowance = {
+  2018: 2000,
   2019: 2000,
   2020: 2000,
   2021: 2000,
@@ -140,6 +145,16 @@ export const nationalInsurance = {
       annualPt: 8632,
       annualUel: 50000,
       employeeRate1: 0.08,
+      employeeRate2: 0.02,
+    }
+  },
+  2018: {
+    "2018-04-06": {
+      pt: 702,
+      uel: 3863,
+      annualPt: 8424,
+      annualUel: 46350,
+      employeeRate1: 0.12,
       employeeRate2: 0.02,
     }
   }
