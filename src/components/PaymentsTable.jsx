@@ -16,7 +16,6 @@ const PaymentsTable = props => {
 
   const rows = [];
   for (const c of salaryComponents) {
-    if (!showSmall && c.gross < 200) continue;
     rows.push({
       date: c.date,
       company: c.company,
@@ -97,10 +96,15 @@ const PaymentsTable = props => {
               <th className={cellClass}>Employee NI</th>
               <th className={cellClass}>Student Loan</th>
               <th className={cellClass}>Net</th>
+              <th className={cellClass}>Month Net</th>
             </tr>
           </thead>
           <tbody>
             {rows.map((c, index) => {
+              let monthTotal = null;
+              if (!rows[index + 1] || rows[index + 1].date.split("-")[1].padStart(2, "0") !== c.date.split("-")[1].padStart(2, "0")) {
+                monthTotal = rows.filter(r => r.date.split("-")[1].padStart(2, "0") === c.date.split("-")[1].padStart(2, "0")).reduce((acc, r) => acc + r.net, 0);
+              }
               return (
                 <tr key={index} className={`${index % 2 === 0 ? "bg-slate-100" : "bg-slate-200"} ${c.future ? "italic text-gray-500 font-light" : ""}`}>
                   <td className={cellClass}>{formatDate(c.date)}</td>
@@ -114,6 +118,7 @@ const PaymentsTable = props => {
                   <td className={cellClass}>{formatCurrency(c.employeeNI)}</td>
                   <td className={cellClass}>{formatCurrency(c.studentLoan)}</td>
                   <td className={cellClass}>{formatCurrency(c.net)}</td>
+                  <td className={cellClass}>{monthTotal === null ? "" : formatCurrency(monthTotal)}</td>
                 </tr>
               );
             })}
