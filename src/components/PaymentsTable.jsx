@@ -22,10 +22,10 @@ const PaymentsTable = props => {
       color: c.color,
       type: "Salary",
       gross: c.gross,
-      incomeTax: c.incomeTax,
+      incomeTax: c.incomeTax || c.itPot || 0,
       employeeNI: c.employeeNI,
-      studentLoan: c.studentLoan,
-      net: c.net,
+      studentLoan: c.studentLoan || c.slPot || 0,
+      net: c.net - (c.slPot || 0) - (c.itPot || 0),
       future: c.future,
     });
   }
@@ -37,10 +37,10 @@ const PaymentsTable = props => {
       color: c.color,
       type: "Dividend",
       gross: c.amount,
-      incomeTax: 0,
+      incomeTax: c.itPot || 0,
       employeeNI: 0,
-      studentLoan: 0,
-      net: c.amount,
+      studentLoan: c.slPot || 0,
+      net: c.amount - (c.slPot || 0) - (c.itPot || 0),
       future: c.future,
     });
   }

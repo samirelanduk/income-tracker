@@ -10,6 +10,7 @@ const TaxReturn = props => {
   const salaryComponents = getComponents(data, "salary", null, taxYear, useFuture);
   const dividendComponents = getComponents(data, "dividend", null, taxYear, useFuture);
   const interestComponents = getComponents(data, "interest", null, taxYear, useFuture);
+  const allComponents = salaryComponents.concat(dividendComponents).concat(interestComponents);
 
   const totalSalaryIncome = salaryComponents.reduce((acc, c) => acc + c.gross, 0);
   const payeIT = salaryComponents.reduce((acc, c) => acc + c.incomeTax, 0);
@@ -26,6 +27,9 @@ const TaxReturn = props => {
   const studentLoanHmrc = parseInt(studentLoanOwed - payeSL);
 
   const hmrcBillPredicted = incomeTaxHmrc + studentLoanHmrc;
+
+  const itPot = allComponents.reduce((acc, c) => acc + (c.itPot || 0), 0);
+  const slPot = allComponents.reduce((acc, c) => acc + (c.slPot || 0), 0);
 
   const taxReturn = taxReturns.find(t => t.taxYear === taxYear);
   const taxReturnTotal = taxReturn ? taxReturn.incomeTax + taxReturn.studentLoan : hmrcBillPredicted;
@@ -80,6 +84,18 @@ const TaxReturn = props => {
             <div className="text-xs font-medium">Predicted: {formatCurrency(studentLoanHmrc)}</div>
           )}
         </div>
+        {(itPot > 0 || slPot > 0) && (
+          <div>
+            <div className={headingClass}>Pot</div>
+            {itPot > 0 && (
+              <div className="text-xs font-medium">Income Tax: {formatCurrency(itPot)}</div>
+            )}
+            {slPot > 0 && (
+              <div className="text-xs font-medium">Student Loan: {formatCurrency(slPot)}</div>
+            )}
+            <div className="text-xs font-semibold">Total: {formatCurrency(itPot + slPot)}</div>
+          </div>
+        )}
         {hasPayments && (
           <div>
             <div className={headingClass}>HMRC Payments</div>
