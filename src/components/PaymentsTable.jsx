@@ -30,7 +30,7 @@ const PaymentsTable = props => {
     });
   }
   for (const c of dividendComponents) {
-    if (!showSmall && c.amount < 200) continue;
+    if (!showSmall && c.amount < 100) continue;
     rows.push({
       date: c.date,
       company: c.company,
@@ -71,6 +71,7 @@ const PaymentsTable = props => {
       employeeNI: 0,
       studentLoan: 0,
       net: c.amount,
+      future: c.future,
     });
   }
 
