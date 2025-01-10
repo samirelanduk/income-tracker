@@ -112,8 +112,6 @@ export const annotateSalaryComponent = (component, cumulativeIncome, cumulativeI
   if (component.future) {
     if (component.incomeTax === undefined) {
       component.incomeTax = predictIncomeTax(cumulativeIncome + component.amount, component.date, cumulativeIncomeTax);
-    } else {
-      component.incomeTax = component.incomeTax;
     }
     if (component.employeeNI === undefined) {
       if (cumulativeNi) {
@@ -125,13 +123,9 @@ export const annotateSalaryComponent = (component, cumulativeIncome, cumulativeI
       } else {
         component.employeeNI = predictEmployeeNI(component.amount, component.date);
       }
-    } else {
-      component.employeeNI = component.employeeNI;
     }
     if (component.studentLoan === undefined) {
       component.studentLoan = predictStudentLoan(component.amount, component.date);
-    } else {
-      component.studentLoan = component.studentLoan;
     }
     component.gross = component.amount;
     component.net = component.amount - component.incomeTax - component.employeeNI - component.studentLoan;
