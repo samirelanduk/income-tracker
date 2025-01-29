@@ -22,7 +22,7 @@ const PersonalTaxYear = props => {
     const hmrcPaymentsForYear = hmrcPayments.filter(p => p.taxYear === taxYear);
     const paidToHmrc = hmrcPaymentsForYear.reduce((acc, p) => acc + p.amount, 0);
     const owedToHmrc = taxReturn.incomeTax + taxReturn.studentLoan;
-    const outstanding = owedToHmrc - paidToHmrc;
+    const outstanding = Math.round((owedToHmrc - paidToHmrc) * 100) / 100;
     if (outstanding === 0) {
       status = "Done";
     } else {

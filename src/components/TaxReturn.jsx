@@ -38,7 +38,7 @@ const TaxReturn = props => {
   const hasPayments = hmrcPaymentsForYear.length > 0;
   const totalPaymentsMade = hmrcPaymentsForYear.reduce((acc, p) => acc + p.amount, 0);
 
-  const outstanding = (taxReturn ? taxReturnTotal : hmrcBillPredicted) - totalPaymentsMade;
+  const outstanding =  Math.round(((taxReturn ? taxReturnTotal : hmrcBillPredicted) - totalPaymentsMade) * 100) / 100;
 
   const yearIsOver = new Date() > new Date(taxYear + 1, 3, 5);
 
