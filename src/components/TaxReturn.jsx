@@ -1,4 +1,3 @@
-import React from "react";
 import PropTypes from "prop-types";
 import { data, taxReturns, hmrcPayments } from "../data";
 import { calculateIncomeTaxOwed, calculateStudentLoanOwed, formatCurrency, formatDate, getComponents } from "../utils";
@@ -18,12 +17,11 @@ const TaxReturn = props => {
 
   const totalInterestIncome = interestComponents.reduce((acc, c) => acc + c.amount, 0);
   const totalDividendIncome = dividendComponents.reduce((acc, c) => acc + c.amount, 0);
-  const totalIncome = totalSalaryIncome + totalDividendIncome + totalInterestIncome;
   
   const [incomeTaxOwed] = calculateIncomeTaxOwed(totalSalaryIncome, totalInterestIncome, totalDividendIncome, taxYear);
   const incomeTaxHmrc = incomeTaxOwed - payeIT;
 
-  const studentLoanOwed = calculateStudentLoanOwed(totalIncome, taxYear);
+  const studentLoanOwed = calculateStudentLoanOwed(totalSalaryIncome, totalInterestIncome, totalDividendIncome, taxYear);
   const studentLoanHmrc = parseInt(studentLoanOwed - payeSL);
 
   const hmrcBillPredicted = incomeTaxHmrc + studentLoanHmrc;
@@ -116,6 +114,7 @@ const TaxReturn = props => {
 TaxReturn.propTypes = {
   taxYear: PropTypes.number.isRequired,
   useFuture: PropTypes.bool.isRequired,
+  className: PropTypes.string,
 };
 
 export default TaxReturn;

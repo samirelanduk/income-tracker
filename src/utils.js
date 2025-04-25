@@ -355,11 +355,13 @@ export const calculateIncomeTaxOwed = (salaryIncome, interestIncome, dividendInc
 }
 
 
-export const calculateStudentLoanOwed = (totalIncome, taxYear) => {
+export const calculateStudentLoanOwed = (salaryIncome, interestIncome, dividendIncome, taxYear) => {
   /**
    * Calculates the student loan deduction for a given total income.
    */
 
+  const unearnedIncome = interestIncome + dividendIncome;
+  const totalIncome = salaryIncome + (unearnedIncome > 2000 ? unearnedIncome : 0);
   const studentLoanData = studentLoan[taxYear];
   const applicable = Math.max(totalIncome - studentLoanData.threshold, 0);
   const owed = applicable * studentLoanData.rate;

@@ -1,4 +1,3 @@
-import React from "react";
 import PropTypes from "prop-types";
 import { data } from "../data";
 import { calculateStudentLoanOwed, getComponents } from "../utils";
@@ -20,8 +19,7 @@ const StudentLoan = props => {
   const interestComponents = getComponents(data, "interest", null, taxYear, useFuture);
   const totalDividendIncome = dividendComponents.reduce((acc, c) => acc + c.amount, 0);
   const totalInterestIncome = interestComponents.reduce((acc, c) => acc + c.amount, 0);
-  const totalIncome = totalSalaryIncome + totalDividendIncome + totalInterestIncome;
-  const studentLoanOwed = calculateStudentLoanOwed(totalIncome, taxYear);
+  const studentLoanOwed = calculateStudentLoanOwed(totalSalaryIncome, totalDividendIncome, totalInterestIncome, taxYear);
   const hmrcBill = studentLoanOwed - paye;
 
   const indentClass = "text-sm pl-4";
@@ -58,6 +56,7 @@ const StudentLoan = props => {
 StudentLoan.propTypes = {
   taxYear: PropTypes.number.isRequired,
   useFuture: PropTypes.bool,
+  className: PropTypes.string,
 };
 
 export default StudentLoan;
